@@ -5,15 +5,27 @@ import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 public class ReqRespModel<T> implements IReqRespModel<T> {
-    private T data;
-    private String message;
+    private final T data;
+    private final String message;
+    private final long timestamp;
+
+    public ReqRespModel(T data, String message) {
+        this.data = data;
+        this.message = message;
+        this.timestamp = System.currentTimeMillis();
+    }
+
     @Override
-    public T getData(){
+    public T getData() {
         return this.data;
     }
 
     @Override
     public String getMessage() {
         return this.message;
+    }
+
+    public long getTimestamp() {
+        return this.timestamp;
     }
 }

@@ -14,6 +14,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authentication.AuthenticationWebFilter;
+import org.springframework.security.web.server.util.matcher.NegatedServerWebExchangeMatcher;
+import org.springframework.security.web.server.util.matcher.OrServerWebExchangeMatcher;
+import org.springframework.security.web.server.util.matcher.PathPatternParserServerWebExchangeMatcher;
 
 
 @Configuration
@@ -32,12 +35,21 @@ public class SecurityConfig {
         AuthenticationWebFilter jwtFilter = new AuthenticationWebFilter(jwtAuthManager);
         jwtFilter.setServerAuthenticationConverter(jwtAuthConverter);
 
-        return http
-                .authorizeExchange(auth ->{
-                    auth.pathMatchers("/user/login").permitAll();
-                    auth.anyExchange().authenticated();
+        // /user/login과 /user/refresh를 제외한 모든 /api/** 경로에 jwtFilter 적용
+        OrServerWebExchangeMatcher pathsToExclude = new OrServerWebExchangeMatcher(
+                new PathPatternParserServerWebExchangeMatcher("/user/login"),
+                new PathPatternParserServerWebExchangeMatcher("/user/refresh")
+        );
+        NegatedServerWebExchangeMatcher pathsToInclude = new NegatedServerWebExchangeMatcher(pathsToExclude);
 
-                })
+        // Custom matcher를 jwtFilter에 적용
+        jwtFilter.setRequiresAuthenticationMatcher(pathsToInclude);
+
+        return http
+                .authorizeExchange(exchanges -> exchanges
+                        .pathMatchers("/user/login", "/user/refresh").permitAll()
+                        .pathMatchers("/api/**").authenticated()
+                )
                 .addFilterAt(jwtFilter, SecurityWebFiltersOrder.AUTHENTICATION)
                 .httpBasic(httpBasic -> httpBasic.disable()) // HTTP 기본 인증 비활성화
                 .formLogin(formLogin -> formLogin.disable()) // 폼 로그인을 비활성화

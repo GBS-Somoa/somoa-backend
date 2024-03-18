@@ -1,4 +1,4 @@
-package com.ssdc.serviceback.global.auth;
+package com.ssdc.serviceback.domain.user.dto;
 
 
 import lombok.AllArgsConstructor;
@@ -6,7 +6,7 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public class ReqLogin {
+public class UserLoginDto {
     private String username;
     private String password;
 }

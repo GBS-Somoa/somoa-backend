@@ -20,8 +20,8 @@ public class AuthManager implements ReactiveAuthenticationManager {
     final ReactiveUserDetailsService users;
 
 
-    public AuthManager(JwtService jweService, ReactiveUserDetailsService users) {
-        this.jwtService = jweService;
+    public AuthManager(JwtService jwtService, ReactiveUserDetailsService users) {
+        this.jwtService = jwtService;
         this.users = users;
     }
 
@@ -30,16 +30,14 @@ public class AuthManager implements ReactiveAuthenticationManager {
         return Mono.justOrEmpty(authentication)
                 .cast(BearerToken.class)
                 .flatMap(auth -> {
+                    System.out.println("검사");
                     String token = auth.getCredentials();
                     String username = jwtService.getUserName(token); // 액세스 토큰에서 사용자 이름 추출
                     // 액세스 토큰 유효성 검사
                     if (jwtService.validateAccessToken(token)) {
                         return processAuthentication(username);
-                    } else if (jwtService.validateRefreshToken(token)) { // 리프레시 토큰 유효성 검사
-                        // 새로운 액세스 토큰 발급
-                        Map<String, String> tokens = jwtService.generateTokens(username);
-                        return processAuthentication(username); // 새로운 액세스 토큰으로 인증 처리
-                    } else {
+                    }// 새로운 액세스 토큰으로 인증 처리
+                    else {
                         return Mono.error(new IllegalArgumentException("Invalid or expired token"));
                     }
                 });
