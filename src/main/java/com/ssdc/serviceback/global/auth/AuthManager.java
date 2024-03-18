@@ -1,5 +1,6 @@
 package com.ssdc.serviceback.global.auth;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -14,16 +15,13 @@ import java.util.Map;
 
 @SuppressWarnings("ClassCanBeRecord")
 @Component
+@RequiredArgsConstructor
 public class AuthManager implements ReactiveAuthenticationManager {
     final JwtService jwtService;
 
     final ReactiveUserDetailsService users;
 
 
-    public AuthManager(JwtService jwtService, ReactiveUserDetailsService users) {
-        this.jwtService = jwtService;
-        this.users = users;
-    }
 
     @Override
     public Mono<Authentication> authenticate(Authentication authentication) {
