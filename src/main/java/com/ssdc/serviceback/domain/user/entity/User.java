@@ -1,9 +1,6 @@
 package com.ssdc.serviceback.domain.user.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
@@ -12,6 +9,7 @@ import org.springframework.data.relational.core.mapping.Table;
 @AllArgsConstructor
 @NoArgsConstructor
 @Table("user")
+@Getter
 @Data
 public class User {
 
@@ -20,11 +18,11 @@ public class User {
     private int id;
 
     @Column("user_username")
-    private String userName;
+    private String username;
 
     @Column("user_password")
     private String password;
 
     @Column("user_nickname")
-    private String nickName;
+    private String nickname;
 }

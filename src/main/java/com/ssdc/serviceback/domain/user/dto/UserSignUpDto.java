@@ -5,7 +5,15 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public class UserInfoDto {
+// UserSignUpDto.java
+public class UserSignUpDto {
+
     private String username;
     private String password;
+    private String nickname;
+    // 생성자, getter 및 setter 생략
+
+
+
+
 }

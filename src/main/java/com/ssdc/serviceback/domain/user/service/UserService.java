@@ -1,6 +1,10 @@
 package com.ssdc.serviceback.domain.user.service;
 
+import com.ssdc.serviceback.domain.user.dto.UserSignUpDto;
+import com.ssdc.serviceback.domain.user.entity.User;
+import com.ssdc.serviceback.domain.user.repository.UserRepository;
 import com.ssdc.serviceback.global.auth.JwtService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -9,23 +13,30 @@ import reactor.core.publisher.Mono;
 import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
 
+    private final UserRepository userRepository;
     private final ReactiveUserDetailsService users;
     private final JwtService jwtService;
-    private final PasswordEncoder encoder;
 
-    public UserService(ReactiveUserDetailsService users, JwtService jwtService, PasswordEncoder encoder) {
-        this.users = users;
-        this.jwtService = jwtService;
-        this.encoder = encoder;
-    }
+
 
     public Mono<Map<String, String>> loginUser(String username, String password) {
         return users.findByUsername(username)
-                .filter(userDetails -> encoder.matches(password, userDetails.getPassword()))
-                .flatMap(userDetails -> jwtService.generateTokens(userDetails.getUsername())) // 비동기 메소드 호출로 변경
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("Invalid username or password")));
+                .flatMap(userDetails -> {
+
+                    if (password.equals(userDetails.getPassword())) {
+                        // 비밀번호가 일치하는 경우, 토큰 생성
+                        System.out.println("비번일치");
+                        return jwtService.generateTokens(userDetails.getUsername());
+                    } else {
+                        // 비밀번호가 일치하지 않는 경우, 에러 반환
+                        System.out.println("비번틀림");
+                        return Mono.error(new IllegalArgumentException("Invalid username or password"));
+                    }
+                })
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("User not found"))); // 사용자가 없는 경우 에러 반환
     }
 
     public Mono<Map<String, String>> refreshAccessToken(String refreshToken) {
@@ -41,5 +52,18 @@ public class UserService {
                     }
                     return jwtService.generateTokens(username); // 비동기 메소드 호출로 변경
                 });
+    }
+
+    public Mono<Object> signUp(UserSignUpDto userSignUpDto) {
+        return userRepository.findByUsername(userSignUpDto.getUsername())
+                .flatMap(existingUser -> Mono.error(new IllegalArgumentException("이미 존재하는 사용자 이름입니다.")))
+                .switchIfEmpty(Mono.defer(() -> {
+                    User newUser = User.builder()
+                            .username(userSignUpDto.getUsername())
+                            .password(userSignUpDto.getPassword())
+                            .nickname(userSignUpDto.getNickname())
+                            .build();
+                    return userRepository.save(newUser);
+                }));
     }
 }

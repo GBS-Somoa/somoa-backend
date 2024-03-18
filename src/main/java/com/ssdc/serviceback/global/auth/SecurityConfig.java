@@ -1,5 +1,6 @@
 package com.ssdc.serviceback.global.auth;
 
+import com.ssdc.serviceback.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -7,9 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
-import org.springframework.security.core.userdetails.MapReactiveUserDetailsService;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.*;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
@@ -17,18 +16,16 @@ import org.springframework.security.web.server.authentication.AuthenticationWebF
 import org.springframework.security.web.server.util.matcher.NegatedServerWebExchangeMatcher;
 import org.springframework.security.web.server.util.matcher.OrServerWebExchangeMatcher;
 import org.springframework.security.web.server.util.matcher.PathPatternParserServerWebExchangeMatcher;
+import reactor.core.publisher.Mono;
 
 
 @Configuration
-//@RequiredArgsConstructor
+@RequiredArgsConstructor
 @EnableWebFluxSecurity
 //@Slf4j
 public class SecurityConfig {
+    private final UserRepository userRepository;
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(
             ServerHttpSecurity http,AuthConverter jwtAuthConverter,AuthManager jwtAuthManager) {
@@ -38,7 +35,8 @@ public class SecurityConfig {
         // /user/login과 /user/refresh를 제외한 모든 /api/** 경로에 jwtFilter 적용
         OrServerWebExchangeMatcher pathsToExclude = new OrServerWebExchangeMatcher(
                 new PathPatternParserServerWebExchangeMatcher("/user/login"),
-                new PathPatternParserServerWebExchangeMatcher("/user/refresh")
+                new PathPatternParserServerWebExchangeMatcher("/user/refresh"),
+        new PathPatternParserServerWebExchangeMatcher("/user/signup")
         );
         NegatedServerWebExchangeMatcher pathsToInclude = new NegatedServerWebExchangeMatcher(pathsToExclude);
 
@@ -47,7 +45,7 @@ public class SecurityConfig {
 
         return http
                 .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers("/user/login", "/user/refresh").permitAll()
+                        .pathMatchers("/user/login", "/user/refresh","/user/signup").permitAll()
                         .pathMatchers("/api/**").authenticated()
                 )
                 .addFilterAt(jwtFilter, SecurityWebFiltersOrder.AUTHENTICATION)
@@ -58,13 +56,13 @@ public class SecurityConfig {
     }
 
     @Bean
-    public MapReactiveUserDetailsService userDetailsService() {
-        UserDetails user = User
-                .withUsername("user")
-                .password(passwordEncoder().encode("password"))
-                .roles("USER")
-                .build();
-        return new MapReactiveUserDetailsService(user);
+    public ReactiveUserDetailsService userDetailsService() {
+        return username -> userRepository.findByUsername(username)
+                .map(user -> org.springframework.security.core.userdetails.User.builder()
+                        .username(user.getUsername())
+                        .password(user.getPassword())
+                        .build())
+                .switchIfEmpty(Mono.error(new UsernameNotFoundException("사용자를 찾을 수 없습니다.")));
     }
 
 }
