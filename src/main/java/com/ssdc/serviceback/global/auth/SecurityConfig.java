@@ -34,7 +34,7 @@ public class SecurityConfig {
 
         return http
                 .authorizeExchange(auth ->{
-                    auth.pathMatchers("/login").permitAll();
+                    auth.pathMatchers("/user/login").permitAll();
                     auth.anyExchange().authenticated();
 
                 })

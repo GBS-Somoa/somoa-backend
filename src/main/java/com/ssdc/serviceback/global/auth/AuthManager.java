@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 import java.util.Collection;
+import java.util.Map;
 
 @SuppressWarnings("ClassCanBeRecord")
 @Component
@@ -25,63 +26,31 @@ public class AuthManager implements ReactiveAuthenticationManager {
     }
 
     @Override
-    public Mono<Authentication> authenticate(Authentication authentication){
-        return Mono.justOrEmpty(
-                authentication
-        )
+    public Mono<Authentication> authenticate(Authentication authentication) {
+        return Mono.justOrEmpty(authentication)
                 .cast(BearerToken.class)
                 .flatMap(auth -> {
-                    String getUsername = jwtService.getUserName(auth.getCredentials());
-                    Mono<UserDetails> foundUser = users.findByUsername(getUsername).defaultIfEmpty(new UserDetails() {
-                        @Override
-                        public Collection<? extends GrantedAuthority> getAuthorities() {
-                            return null;
-                        }
-
-                        @Override
-                        public String getPassword() {
-                            return null;
-                        }
-
-                        @Override
-                        public String getUsername() {
-                            return null;
-                        }
-
-                        @Override
-                        public boolean isAccountNonExpired() {
-                            return false;
-                        }
-
-                        @Override
-                        public boolean isAccountNonLocked() {
-                            return false;
-                        }
-
-                        @Override
-                        public boolean isCredentialsNonExpired() {
-                            return false;
-                        }
-
-                        @Override
-                        public boolean isEnabled() {
-                            return false;
-                        }
-                    });
-
-                    Mono<Authentication> authenticatedUser = foundUser.flatMap(u ->{
-                        if(u.getUsername()==null){
-                            Mono.error(new IllegalArgumentException("유저가 존재하지 않습니다."));
-                        }
-                        if(jwtService.validate(u,auth.getCredentials())){
-                            return Mono.justOrEmpty(new UsernamePasswordAuthenticationToken(u.getUsername(),u.getPassword(),u.getAuthorities()));
-                        }
-                        Mono.error(new IllegalArgumentException("유효하지 않거나 만료된 토큰"));
-                        return Mono.justOrEmpty(new UsernamePasswordAuthenticationToken(u.getUsername(),u.getPassword(),u.getAuthorities()));
-                    });
-
-                    return authenticatedUser;
+                    String token = auth.getCredentials();
+                    String username = jwtService.getUserName(token); // 액세스 토큰에서 사용자 이름 추출
+                    // 액세스 토큰 유효성 검사
+                    if (jwtService.validateAccessToken(token)) {
+                        return processAuthentication(username);
+                    } else if (jwtService.validateRefreshToken(token)) { // 리프레시 토큰 유효성 검사
+                        // 새로운 액세스 토큰 발급
+                        Map<String, String> tokens = jwtService.generateTokens(username);
+                        return processAuthentication(username); // 새로운 액세스 토큰으로 인증 처리
+                    } else {
+                        return Mono.error(new IllegalArgumentException("Invalid or expired token"));
+                    }
                 });
+    }
 
+    private Mono<Authentication> processAuthentication(String username) {
+        return users.findByUsername(username)
+                .flatMap(userDetails -> Mono.just(new UsernamePasswordAuthenticationToken(
+                        userDetails.getUsername(),
+                        userDetails.getPassword(),
+                        userDetails.getAuthorities()
+                )));
     }
 }
