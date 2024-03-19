@@ -10,7 +10,7 @@ public class BlockHoundCustomConfiguration implements BlockHoundIntegration {
         builder.allowBlockingCallsInside("io.netty.util.concurrent.FastThreadLocalRunnable", "run")
                 .allowBlockingCallsInside("java.io.FileInputStream", "readBytes")
                 .allowBlockingCallsInside("java.security.Provider$Service", "newInstance")
-                .allowBlockingCallsInside("sun.security.ssl.SSLContextImpl$DefaultSSLContext", "<init>")
+                .allowBlockingCallsInside("sun.security.ssl.SSLContextImpl", "DefaultSSLContext")
                 .allowBlockingCallsInside(
                 "io.netty.handler.ssl.SslContext",
                 "newClientContextInternal")

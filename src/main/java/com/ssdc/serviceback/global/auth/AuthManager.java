@@ -37,7 +37,6 @@ public class AuthManager implements ReactiveAuthenticationManager {
                         return processAuthentication(username);
                     }
                     else {// 유효기간 지났거나, 토큰이아닌놈
-                        System.out.println("ggggg");
                         return Mono.error(new AuthenticationException("Invalid or expired token") {
                         });
                     }

@@ -13,10 +13,17 @@ public class ResponseHandler<T>{
     private final String message;
     private final long timestamp;
     private final int status;
-    private ResponseHandler(T data, String message, int status) {
+    ResponseHandler(T data, String message, int status) {
         this.data = data;
         this.message = message;
         this.status = status;
+        this.timestamp = System.currentTimeMillis();
+    }
+
+    public ResponseHandler(String message, int value) {
+        this.data = (T) "";
+        this.message = message;
+        this.status = value;
         this.timestamp = System.currentTimeMillis();
     }
 

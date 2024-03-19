@@ -1,5 +1,6 @@
 package com.ssdc.serviceback.global.auth;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssdc.serviceback.domain.user.repository.UserRepository;
 import com.ssdc.serviceback.global.handler.ResponseHandler;
 import lombok.RequiredArgsConstructor;
@@ -33,13 +34,16 @@ public class SecurityConfig {
     public SecurityWebFilterChain securityWebFilterChain(
             ServerHttpSecurity http,AuthConverter jwtAuthConverter,AuthManager jwtAuthManager ) {
         AuthenticationWebFilter jwtFilter = new AuthenticationWebFilter(jwtAuthManager);
+        jwtFilter.setAuthenticationFailureHandler(new CustomAuthenticationFailureHandler(new ObjectMapper()));
         jwtFilter.setServerAuthenticationConverter(jwtAuthConverter);
         // 아래경로를 제외하고 모든 경로에 jwtFilter 적용
         OrServerWebExchangeMatcher pathsToExclude = new OrServerWebExchangeMatcher(
                 new PathPatternParserServerWebExchangeMatcher("/user/login"),
                 new PathPatternParserServerWebExchangeMatcher("/user/refresh"),
-                new PathPatternParserServerWebExchangeMatcher("/user/signup")
-        );
+                new PathPatternParserServerWebExchangeMatcher("/user/signup"),
+                new PathPatternParserServerWebExchangeMatcher("/api/user/signup")
+
+                );
         NegatedServerWebExchangeMatcher pathsToInclude = new NegatedServerWebExchangeMatcher(pathsToExclude);
 
         // Custom matcher를 jwtFilter에 적용
@@ -47,22 +51,22 @@ public class SecurityConfig {
 
         return http
                 .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers("/user/login", "/user/refresh","/user/signup").permitAll()
+                        .pathMatchers("/user/login", "/user/refresh","/user/signup","/api/user/signup").permitAll()
                         .pathMatchers("/**").authenticated()
                 )
                 .httpBasic(httpBasic -> httpBasic.disable()) // HTTP 기본 인증 비활성화
                 .formLogin(formLogin -> formLogin.disable()) // 폼 로그인을 비활성화
                 .csrf(csrf -> csrf.disable())
-                .exceptionHandling(authenticationManager -> authenticationManager
-                        .authenticationEntryPoint(new CustomAuthenticationEntryPoint()))
                 .addFilterAt(jwtFilter, SecurityWebFiltersOrder.AUTHENTICATION)
+                .exceptionHandling(authenticationManager -> authenticationManager
+                        .authenticationEntryPoint(new CustomAuthenticationEntryPoint(new ObjectMapper())))
+
                 .build();
     }
 
 
     @Bean
     public ReactiveUserDetailsService userDetailsService() {
-        System.out.println("ddasd");
         return username -> userRepository.findByUsername(username)
                 .map(user -> org.springframework.security.core.userdetails.User.builder()
                         .username(user.getUsername())

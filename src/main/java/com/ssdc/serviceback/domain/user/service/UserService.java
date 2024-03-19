@@ -28,11 +28,9 @@ public class UserService {
 
                     if (password.equals(userDetails.getPassword())) {
                         // 비밀번호가 일치하는 경우, 토큰 생성
-                        System.out.println("비번일치");
                         return jwtService.generateTokens(userDetails.getUsername());
                     } else {
                         // 비밀번호가 일치하지 않는 경우, 에러 반환
-                        System.out.println("비번틀림");
                         return Mono.error(new IllegalArgumentException("Invalid username or password"));
                     }
                 })

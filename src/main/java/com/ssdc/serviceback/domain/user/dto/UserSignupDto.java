@@ -11,7 +11,6 @@ public class UserSignupDto {
     private String username;
     private String password;
     private String nickname;
-    // 생성자, getter 및 setter 생략
 
 
 
