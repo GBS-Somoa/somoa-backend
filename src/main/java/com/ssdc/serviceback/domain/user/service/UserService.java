@@ -1,15 +1,15 @@
 package com.ssdc.serviceback.domain.user.service;
 
-import com.ssdc.serviceback.domain.user.dto.UserSignUpDto;
+import com.ssdc.serviceback.domain.user.dto.UserSignupDto;
 import com.ssdc.serviceback.domain.user.entity.User;
 import com.ssdc.serviceback.domain.user.repository.UserRepository;
 import com.ssdc.serviceback.global.auth.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Service
@@ -54,7 +54,7 @@ public class UserService {
                 });
     }
 
-    public Mono<Object> signUp(UserSignUpDto userSignUpDto) {
+    public Mono<Object> signUp(UserSignupDto userSignUpDto) {
         return userRepository.findByUsername(userSignUpDto.getUsername())
                 .flatMap(existingUser -> Mono.error(new IllegalArgumentException("이미 존재하는 사용자 이름입니다.")))
                 .switchIfEmpty(Mono.defer(() -> {
@@ -63,7 +63,12 @@ public class UserService {
                             .password(userSignUpDto.getPassword())
                             .nickname(userSignUpDto.getNickname())
                             .build();
-                    return userRepository.save(newUser);
+                    return userRepository.save(newUser)
+                            .map(savedUser -> {
+                                Map<String, Integer> responseContent = new HashMap<>();
+                                responseContent.put("id", savedUser.getId());
+                                return responseContent;
+                            });
                 }));
     }
 }

@@ -6,7 +6,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 // UserSignUpDto.java
-public class UserSignUpDto {
+public class UserSignupDto {
 
     private String username;
     private String password;

@@ -7,6 +7,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.Value;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -17,7 +18,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-
+@Component
 @Service
 public class JwtService {
 
@@ -70,6 +71,7 @@ public class JwtService {
 
     public boolean validateAccessToken(String token) {
         try {
+            System.out.println("dd");
             Claims claims = parser.parseClaimsJws(token).getBody();
             return claims.getExpiration().after(new Date());
         } catch (Exception e) {
