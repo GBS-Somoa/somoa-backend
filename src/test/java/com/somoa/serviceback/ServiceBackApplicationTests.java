@@ -1,4 +1,4 @@
-package com.ssdc.serviceback;
+package com.somoa.serviceback;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

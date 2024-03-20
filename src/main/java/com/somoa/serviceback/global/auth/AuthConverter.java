@@ -1,4 +1,4 @@
-package com.ssdc.serviceback.global.auth;
+package com.somoa.serviceback.global.auth;
 
 
 import org.springframework.http.HttpHeaders;
@@ -21,5 +21,6 @@ public class AuthConverter implements ServerAuthenticationConverter {
                 .map(s-> s.substring(7))
                 .map(s-> new BearerToken(s));
     }
+
 
 }

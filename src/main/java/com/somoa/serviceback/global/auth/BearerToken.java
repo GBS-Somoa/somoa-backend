@@ -1,4 +1,4 @@
-package com.ssdc.serviceback.global.auth;
+package com.somoa.serviceback.global.auth;
 
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.authority.AuthorityUtils;
