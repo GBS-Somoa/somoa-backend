@@ -1,7 +1,6 @@
 package com.somoa.serviceback.domain.group.controller;
 
 import com.somoa.serviceback.domain.group.dto.GroupRegisterParam;
-import com.somoa.serviceback.domain.group.entity.Group;
 import com.somoa.serviceback.domain.group.service.GroupService;
 import com.somoa.serviceback.global.handler.ResponseHandler;
 import lombok.RequiredArgsConstructor;

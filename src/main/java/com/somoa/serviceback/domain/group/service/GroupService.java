@@ -6,7 +6,6 @@ import com.somoa.serviceback.domain.group.repository.GroupRepository;
 import com.somoa.serviceback.domain.groupuser.entity.GroupUser;
 import com.somoa.serviceback.domain.groupuser.entity.GroupUserRole;
 import com.somoa.serviceback.domain.groupuser.repository.GroupUserRepository;
-import com.somoa.serviceback.domain.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
