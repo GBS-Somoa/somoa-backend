@@ -1,5 +1,9 @@
 package com.somoa.serviceback.domain.device.service;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+
 import com.somoa.serviceback.domain.device.dto.DeviceRegisterParam;
 import com.somoa.serviceback.domain.device.entity.Device;
 import com.somoa.serviceback.domain.device.repository.DeviceRepository;
@@ -24,19 +28,23 @@ public class DeviceService {
         final String manufacturer = "제조사";
         // ****************************************
 
-        return deviceRepository.findByCode(param.getCode())
+        // response data
+        Map<String, Object> data = new HashMap<>();
+        data.put("deviceId", param.getCode());
+
+        return deviceRepository.findById(param.getCode())
                 .flatMap(existingDevice -> Mono.error(new IllegalArgumentException("이미 등록된 기기입니다.")))
                 .switchIfEmpty(Mono.defer(() -> {
                             Device device = Device.builder()
-                                    .code(param.getCode())
+                                    .id(param.getCode())
                                     .groupId(param.getGroupId())
                                     .nickname(param.getNickname())
                                     .model(model)
                                     .type(type)
                                     .manufacturer(manufacturer)
                                     .build();
-                            return deviceRepository.save(device)
-                                    .map(savedDevice -> Mono.empty());
+                            return deviceRepository.saveForce(device)
+                                .then(Mono.just(data));
                         }
                 ));
     }

@@ -17,10 +17,7 @@ public class Device {
 
     @Id
     @Column("device_id")
-    private Integer id;
-
-    @Column("device_code")
-    private String code;
+    private String id;
 
     @Column("device_manufacturer")
     private String manufacturer;
