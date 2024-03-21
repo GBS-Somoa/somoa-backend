@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
@@ -35,9 +36,7 @@ public class SecurityConfig {
         OrServerWebExchangeMatcher pathsToExclude = new OrServerWebExchangeMatcher(
                 new PathPatternParserServerWebExchangeMatcher("/user/login"),
                 new PathPatternParserServerWebExchangeMatcher("/user/refresh"),
-                new PathPatternParserServerWebExchangeMatcher("/user/signup"),
-                new PathPatternParserServerWebExchangeMatcher("/api/user/signup")
-
+                new PathPatternParserServerWebExchangeMatcher("/user/signup")
                 );
         NegatedServerWebExchangeMatcher pathsToInclude = new NegatedServerWebExchangeMatcher(pathsToExclude);
 
@@ -46,6 +45,8 @@ public class SecurityConfig {
 
         return http
                 .authorizeExchange(exchanges -> exchanges
+                        .pathMatchers(HttpMethod.POST, "/orders").permitAll()
+                        .pathMatchers(HttpMethod.PATCH, "/orders/{order_id}").permitAll()
                         .pathMatchers("/user/login", "/user/refresh","/user/signup","/api/user/signup").permitAll()
                         .pathMatchers("/**").authenticated()
                 )
