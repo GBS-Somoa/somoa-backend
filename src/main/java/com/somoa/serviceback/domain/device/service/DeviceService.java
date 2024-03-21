@@ -21,7 +21,7 @@ public class DeviceService {
 
     @Transactional
     public Mono<?> save(DeviceRegisterParam param) {
-        // 제조사 서버 API 호출 : /api/device?device_id={device_id}
+        // TODO: 제조사 서버 API 호출 : /api/device?device_id={device_id}
         // device_id : param.getCode();
         // API 호출의 응답으로 변경될 예정(현재는 dummy data)
         final String model = "모델 이름";
