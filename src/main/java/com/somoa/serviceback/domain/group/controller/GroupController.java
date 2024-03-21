@@ -2,17 +2,20 @@ package com.somoa.serviceback.domain.group.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.somoa.serviceback.domain.group.dto.GroupRegisterParam;
+import com.somoa.serviceback.domain.group.dto.GroupResponse;
 import com.somoa.serviceback.domain.group.service.GroupService;
 import com.somoa.serviceback.global.handler.ResponseHandler;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -32,5 +35,13 @@ public class GroupController {
                     log.error("error occurs!!", error);
                     return ResponseHandler.error("internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
                 });
+    }
+
+    @GetMapping
+    private Mono<ResponseEntity<ResponseHandler>> list() {
+        Integer userId = 1;
+        return groupService.findAll(userId)
+            .collectList()
+            .flatMap(data -> ResponseHandler.ok(data, "장소 목록을 조회했습니다."));
     }
 }
