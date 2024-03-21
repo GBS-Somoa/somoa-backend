@@ -46,7 +46,8 @@ public class UserController {
 
 
     @PostMapping("/login")
-    public Mono<ResponseEntity<ResponseHandler>> login(@RequestBody UserLoginDto user) {
+    public Mono<ResponseEntity<ResponseHandler>> login(@RequestHeader("Authorization") String FcmToken,@RequestBody UserLoginDto user) {
+        System.out.println(FcmToken);
         return userService.loginUser(user.getUsername(), user.getPassword())
                 .flatMap(tokens -> ResponseHandler.ok(tokens, "로그인 성공"))
                 .onErrorResume(e -> {
