@@ -27,6 +27,9 @@ public class OrderController {
         return orderService.saveOrder(orderSaveDto)
                 .flatMap(order -> ResponseHandler.ok(order, "주문 등록에 성공했습니다."))
                 .onErrorResume(error -> {
+                    if (error instanceof IllegalArgumentException) {
+                        return ResponseHandler.error(error.getMessage(), HttpStatus.BAD_REQUEST);
+                    }
                     log.error("주문 등록에 실패했습니다.", error);
                     return ResponseHandler.error("서버 오류로 주문 등록에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR);
                 });
@@ -38,6 +41,9 @@ public class OrderController {
         return orderService.updateOrderStatus(orderId, orderStatusUpdateDto)
                 .flatMap(order -> ResponseHandler.ok("", "주문 상태 변경에 성공했습니다."))
                 .onErrorResume(error -> {
+                    if (error instanceof IllegalArgumentException) {
+                        return ResponseHandler.error(error.getMessage(), HttpStatus.BAD_REQUEST);
+                    }
                     log.error("주문 상태 변경에 실패했습니다.", error);
                     return ResponseHandler.error("서버 오류로 주문 상태 변경에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR);
                 });

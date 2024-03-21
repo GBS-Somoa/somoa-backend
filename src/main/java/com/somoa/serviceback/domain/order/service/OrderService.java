@@ -23,17 +23,21 @@ public class OrderService {
 
     @Transactional
     public Mono<Map<String, Object>> saveOrder(OrderSaveDto orderSaveDto) {
-        return orderRepository.save(Order.builder()
-                .groupId(orderSaveDto.getGroupId())
-                .supplyId(orderSaveDto.getSupplyId())
-                .orderStatus(orderSaveDto.getOrderStatus())
-                .productName(orderSaveDto.getProductName())
-                .orderStore(orderSaveDto.getOrderStore())
-                .orderStoreId(orderSaveDto.getOrderStoreId())
-                .productImg(orderSaveDto.getProductImg())
-                .orderCount(orderSaveDto.getOrderCount())
-                .orderAmount(orderSaveDto.getOrderAmount())
-                .build())
+        return orderRepository.findByOrderStoreId(orderSaveDto.getOrderStoreId())
+                .hasElement()
+                .filter(exists -> !exists)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("이미 등록된 주문입니다.")))
+                .then(orderRepository.save(Order.builder()
+                        .groupId(orderSaveDto.getGroupId())
+                        .supplyId(orderSaveDto.getSupplyId())
+                        .orderStatus(orderSaveDto.getOrderStatus())
+                        .productName(orderSaveDto.getProductName())
+                        .orderStore(orderSaveDto.getOrderStore())
+                        .orderStoreId(orderSaveDto.getOrderStoreId())
+                        .productImg(orderSaveDto.getProductImg())
+                        .orderCount(orderSaveDto.getOrderCount())
+                        .orderAmount(orderSaveDto.getOrderAmount())
+                        .build()))
                 .map(order -> {
                     Map<String, Object> response = new HashMap<>();
                     response.put("id", order.getId());

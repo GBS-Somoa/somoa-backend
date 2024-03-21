@@ -1,8 +1,6 @@
 package com.somoa.serviceback.domain.order.entity;
 
-import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
@@ -10,8 +8,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 @Table("`order`")
 @Builder
@@ -50,12 +46,4 @@ public class Order {
 
     @Column("order_amount")
     private String orderAmount;
-
-//    @Column("created_at")
-//    @CreatedDate
-//    private LocalDateTime createdAt;
-//
-//    @Column("updated_at")
-//    @LastModifiedDate
-//    private LocalDateTime updatedAt;
 }
