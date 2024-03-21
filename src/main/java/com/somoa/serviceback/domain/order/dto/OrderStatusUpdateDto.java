@@ -1,10 +1,9 @@
 package com.somoa.serviceback.domain.order.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 
-@Getter
-@AllArgsConstructor
+@Data
 public class OrderStatusUpdateDto {
+
     private String orderStatus;
 }

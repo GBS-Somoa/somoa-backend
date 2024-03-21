@@ -1,23 +1,28 @@
 package com.somoa.serviceback.domain.order.entity;
 
-
-import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
-import java.sql.Timestamp;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
+@Table("`order`")
 @Builder
+@Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Table("order")
-@Getter
-@Setter
 public class Order {
+
     @Id
     @Column("order_id")
-    private int id;
+    private Long id;
 
     @Column("group_id")
     private Long groupId;
@@ -46,9 +51,11 @@ public class Order {
     @Column("order_amount")
     private String orderAmount;
 
-    @Column("created_at")
-    private Timestamp createdAt;
-
-    @Column("updated_at")
-    private Timestamp updatedAt;
+//    @Column("created_at")
+//    @CreatedDate
+//    private LocalDateTime createdAt;
+//
+//    @Column("updated_at")
+//    @LastModifiedDate
+//    private LocalDateTime updatedAt;
 }

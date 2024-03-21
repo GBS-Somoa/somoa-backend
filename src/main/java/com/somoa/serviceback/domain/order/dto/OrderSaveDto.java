@@ -1,12 +1,11 @@
 package com.somoa.serviceback.domain.order.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 
-@Getter
-@AllArgsConstructor
+@Data
 public class OrderSaveDto {
-    private Integer groupId;
+
+    private Long groupId;
     private Integer supplyId;
     private String orderStatus;
     private String productName;
