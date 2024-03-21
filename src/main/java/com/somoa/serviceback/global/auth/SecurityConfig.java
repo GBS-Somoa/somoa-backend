@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
@@ -32,12 +33,11 @@ public class SecurityConfig {
         jwtFilter.setAuthenticationFailureHandler(new CustomAuthenticationFailureHandler(new ObjectMapper()));
         jwtFilter.setServerAuthenticationConverter(jwtAuthConverter);
         // 아래경로를 제외하고 모든 경로에 jwtFilter 적용
+
         OrServerWebExchangeMatcher pathsToExclude = new OrServerWebExchangeMatcher(
                 new PathPatternParserServerWebExchangeMatcher("/user/login"),
                 new PathPatternParserServerWebExchangeMatcher("/user/refresh"),
-                new PathPatternParserServerWebExchangeMatcher("/user/signup"),
-                new PathPatternParserServerWebExchangeMatcher("/api/user/signup")
-
+                new PathPatternParserServerWebExchangeMatcher("/user/signup")
                 );
         NegatedServerWebExchangeMatcher pathsToInclude = new NegatedServerWebExchangeMatcher(pathsToExclude);
 
@@ -46,7 +46,10 @@ public class SecurityConfig {
 
         return http
                 .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers("/user/login", "/user/refresh","/user/signup","/api/user/signup").permitAll()
+                        .pathMatchers(HttpMethod.POST, "/orders").permitAll()
+                        .pathMatchers(HttpMethod.PATCH, "/orders/{order_id}").permitAll()
+                        .pathMatchers(HttpMethod.POST,"/devices/{device_id}").permitAll()
+                        .pathMatchers("/user/login", "/user/refresh","/user/signup").permitAll()
                         .pathMatchers("/**").authenticated()
                 )
                 .httpBasic(httpBasic -> httpBasic.disable()) // HTTP 기본 인증 비활성화
