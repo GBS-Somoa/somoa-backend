@@ -1,7 +1,7 @@
-package com.somoa.serviceback.domain.device.controller;
+package com.somoa.serviceback.domain.group.controller;
 
-import com.somoa.serviceback.domain.device.dto.DeviceRegisterParam;
-import com.somoa.serviceback.domain.device.service.DeviceService;
+import com.somoa.serviceback.domain.group.dto.GroupRegisterParam;
+import com.somoa.serviceback.domain.group.service.GroupService;
 import com.somoa.serviceback.global.handler.ResponseHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,16 +16,16 @@ import reactor.core.publisher.Mono;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/devices")
-public class DeviceController {
+@RequestMapping("/groups")
+public class GroupController {
 
-    private final DeviceService deviceService;
+    private final GroupService groupService;
 
     @PostMapping
-    private Mono<ResponseEntity<ResponseHandler>> register(@RequestBody DeviceRegisterParam param) {
-//        Integer userId = 1;     // Token에서 userId 정보 추출
-        return deviceService.save(param)
-                .flatMap(data -> ResponseHandler.ok(data, "기기를 등록했습니다."))
+    private Mono<ResponseEntity<ResponseHandler>> create(@RequestBody GroupRegisterParam param) {
+        Integer userId = 1;     // Token에서 userId 정보 추출
+        return groupService.save(userId, param)
+                .flatMap(data -> ResponseHandler.ok(data, "장소를 생성했습니다."))
                 .onErrorResume(error -> {
                     log.error("error occurs!!", error);
                     return ResponseHandler.error("internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
