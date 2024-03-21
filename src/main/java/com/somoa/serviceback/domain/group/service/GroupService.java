@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.somoa.serviceback.domain.group.dto.GroupRegisterParam;
+import com.somoa.serviceback.domain.group.dto.GroupResponse;
 import com.somoa.serviceback.domain.group.entity.Group;
 import com.somoa.serviceback.domain.group.repository.GroupRepository;
 import com.somoa.serviceback.domain.groupuser.entity.GroupUser;
@@ -14,6 +15,7 @@ import com.somoa.serviceback.domain.groupuser.entity.GroupUserRole;
 import com.somoa.serviceback.domain.groupuser.repository.GroupUserRepository;
 
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -43,5 +45,10 @@ public class GroupService {
                     data.put("groupUserId", groupUser.getId());
                     return data;
                 });
+    }
+
+    public Flux<GroupResponse> findAll(Integer userId) {
+        return groupRepository.findAllByUserId(userId)
+            .map(GroupResponse::of);
     }
 }
