@@ -14,7 +14,6 @@ import com.somoa.serviceback.domain.group.repository.GroupRepository;
 import com.somoa.serviceback.domain.groupuser.entity.GroupUser;
 import com.somoa.serviceback.domain.groupuser.entity.GroupUserRole;
 import com.somoa.serviceback.domain.groupuser.repository.GroupUserRepository;
-import com.somoa.serviceback.domain.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -26,7 +25,6 @@ public class GroupService {
 
     private final GroupRepository groupRepository;
     private final GroupUserRepository groupUserRepository;
-    private final UserRepository userRepository;
 
     @Transactional
     public Mono<Map<String, Object>> save(Integer userId, GroupRegisterParam param) {
