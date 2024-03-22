@@ -20,7 +20,7 @@ public class DeviceService {
     private final DeviceRepository deviceRepository;
 
     @Transactional
-    public Mono<?> save(DeviceRegisterParam param) {
+    public Mono<Object> save(DeviceRegisterParam param) {
         // TODO: 제조사 서버 API 호출 : /api/device?device_id={device_id}
         // device_id : param.getCode();
         // API 호출의 응답으로 변경될 예정(현재는 dummy data)
