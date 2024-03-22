@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.somoa.serviceback.domain.group.dto.GroupRegisterParam;
 import com.somoa.serviceback.domain.group.dto.GroupResponse;
+import com.somoa.serviceback.domain.group.dto.GroupUserRegisterParam;
 import com.somoa.serviceback.domain.group.service.GroupService;
 import com.somoa.serviceback.global.handler.ResponseHandler;
 
@@ -49,6 +50,17 @@ public class GroupController {
     public Mono<ResponseEntity<ResponseHandler>> detail(@PathVariable("groupId") Integer groupId) {
         return groupService.findOne(userId, groupId)
             .flatMap(data -> ResponseHandler.ok(data, "장소 상세 조회에 성공했습니다."))
+            .onErrorResume(error -> {
+                log.error("error occurs!!", error);
+                return ResponseHandler.error("internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
+            });
+    }
+
+    @PostMapping("/{groupId}/users")
+    public Mono<ResponseEntity<ResponseHandler>> addGroupMember(@PathVariable("groupId") Integer groupId,
+                                                                @RequestBody GroupUserRegisterParam param) {
+        return groupService.addMember(groupId, param)
+            .flatMap(data -> ResponseHandler.ok(data, "멤버를 추가했습니다."))
             .onErrorResume(error -> {
                 log.error("error occurs!!", error);
                 return ResponseHandler.error("internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
