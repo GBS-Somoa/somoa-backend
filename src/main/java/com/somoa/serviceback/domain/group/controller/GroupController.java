@@ -9,11 +9,15 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.somoa.serviceback.domain.group.dto.GroupModifyParam;
 import com.somoa.serviceback.domain.group.dto.GroupRegisterParam;
 import com.somoa.serviceback.domain.group.dto.GroupUserRegisterParam;
+import com.somoa.serviceback.domain.group.dto.GroupUserRoleParam;
+import com.somoa.serviceback.domain.group.entity.Group;
+import com.somoa.serviceback.domain.group.entity.GroupUserRole;
 import com.somoa.serviceback.domain.group.service.GroupService;
 import com.somoa.serviceback.global.handler.ResponseHandler;
 
@@ -103,6 +107,18 @@ public class GroupController {
         @RequestBody GroupUserRegisterParam param) {
         return groupService.addMember(groupId, param)
             .flatMap(data -> ResponseHandler.ok(data, "멤버를 추가했습니다."))
+            .onErrorResume(error -> {
+                log.error("error occurs!!", error);
+                return ResponseHandler.error("internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
+            });
+    }
+
+    @PatchMapping("/{groupId}/users/{userId}/permission")
+    public Mono<ResponseEntity<ResponseHandler>> modifyGroupMemberPermission(@PathVariable("groupId") Integer groupId,
+                                                                             @PathVariable("userId") Integer userId,
+                                                                             @RequestBody GroupUserRoleParam param) {
+        return groupService.modifyMemberPermission(GroupController.userId, groupId, userId, param.getRole())
+            .flatMap(data -> ResponseHandler.ok(data, "멤버 권한을 수정했습니다."))
             .onErrorResume(error -> {
                 log.error("error occurs!!", error);
                 return ResponseHandler.error("internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
