@@ -2,8 +2,8 @@ package com.somoa.serviceback.domain.group.dto;
 
 import java.util.List;
 
-import com.somoa.serviceback.domain.group.repository.dto.GroupWithUserInfo;
 import com.somoa.serviceback.domain.group.entity.GroupUserRole;
+import com.somoa.serviceback.domain.group.repository.dto.GroupWithUserInfo;
 import com.somoa.serviceback.domain.user.dto.UserSimpleResponse;
 
 import lombok.Builder;
