@@ -115,6 +115,20 @@ public class GroupService {
     }
 
     @Transactional
+    public Mono<?> leave(Integer userId, Integer groupId) {
+        return groupUserRepository.findGroupUser(groupId, userId)
+            .flatMap(existingGroupUser -> {
+                    if (existingGroupUser.getRole().equals(GroupUserRole.MANAGER)) {
+                        return Mono.error(new RuntimeException("관리자는 그룹에서 나갈 수 없습니다."));
+                    } else {
+                        return groupUserRepository.delete(existingGroupUser)
+                                .then(Mono.just(existingGroupUser.getId()));
+                    }
+                })
+            .switchIfEmpty(Mono.defer(() -> Mono.error(new IllegalArgumentException("그룹에 속하지 않은 유저입니다."))));
+    }
+
+    @Transactional
     public Mono<Map<String, Object>> addMember(Integer groupId, GroupUserRegisterParam param) {
         final Integer userId = param.getUserId();
 

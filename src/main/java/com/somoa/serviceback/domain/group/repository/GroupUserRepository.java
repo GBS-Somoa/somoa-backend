@@ -16,6 +16,11 @@ public interface GroupUserRepository extends ReactiveCrudRepository<GroupUser, I
 		+ "					WHERE group_id = :groupId AND user_id = :userId)")
 	Mono<Boolean> existsGroupUser(Integer groupId, Integer userId);
 
+	@Query("SELECT * "
+		+ "	  FROM group_user "
+		+ "	 WHERE group_id = :groupId AND user_id = :userId")
+	Mono<GroupUser> findGroupUser(Integer groupId, Integer userId);
+
 	@Query("SELECT u.user_id, u.user_nickname, gu.role"
 		+ "	  FROM group_user gu"
 		+ "	  JOIN user u"
