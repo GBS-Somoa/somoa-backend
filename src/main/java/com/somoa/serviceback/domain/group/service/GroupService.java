@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.somoa.serviceback.domain.group.dto.GroupDetailResponse;
+import com.somoa.serviceback.domain.group.dto.GroupModifyParam;
 import com.somoa.serviceback.domain.group.dto.GroupRegisterParam;
 import com.somoa.serviceback.domain.group.dto.GroupResponse;
 import com.somoa.serviceback.domain.group.dto.GroupUserRegisterParam;
@@ -64,13 +65,36 @@ public class GroupService {
                             .collectList()
                             .map(groupMembers -> GroupDetailResponse.of(group, groupMembers)));
                 } else {
-                    return Mono.error(new IllegalArgumentException("장소에 대한 권한이 없는 유저입니다."));
+                    return Mono.error(new IllegalArgumentException("그룹에 대한 권한이 없는 유저입니다."));
                 }
             });
     }
 
     @Transactional
-    public Mono<Object> addMember(Integer groupId, GroupUserRegisterParam param) {
+    public Mono<Map<String, Object>> modify(Integer userId, Integer groupId, GroupModifyParam param) {
+        return groupUserRepository.findGroupManager(groupId)
+            .flatMap(managerId -> {
+                if (!managerId.equals(userId)) {
+                    return Mono.error(new IllegalArgumentException("그룹 수정 권한이 없는 유저입니다."));
+                } else {
+                    return groupRepository.findById(groupId)
+                        .flatMap(group -> {
+                            group.setName(param.getGroupName());
+                            return groupRepository.save(group)
+                                .map(modifiedGroup -> {
+                                    Map<String, Object> data = new HashMap<>();
+                                    data.put("groupId", group.getId());
+                                    data.put("groupName", group.getName());
+                                    return data;
+                                });
+                        })
+                        .switchIfEmpty(Mono.error(new IllegalArgumentException("유효하지 않는 그룹 번호입니다.")));
+                }
+            });
+    }
+
+    @Transactional
+    public Mono<Map<String, Object>> addMember(Integer groupId, GroupUserRegisterParam param) {
         final Integer userId = param.getUserId();
 
         // response data
