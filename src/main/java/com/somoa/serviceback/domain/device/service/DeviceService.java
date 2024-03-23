@@ -3,6 +3,7 @@ package com.somoa.serviceback.domain.device.service;
 import com.somoa.serviceback.domain.device.dto.DeviceRegisterParam;
 import com.somoa.serviceback.domain.device.dto.DeviceExternalApiResponse;
 import com.somoa.serviceback.domain.device.dto.DeviceResponse;
+import com.somoa.serviceback.domain.device.dto.DeviceUpdateParam;
 import com.somoa.serviceback.domain.device.entity.Device;
 import com.somoa.serviceback.domain.device.entity.DeviceType;
 import com.somoa.serviceback.domain.device.exception.DeviceNotFoundException;
@@ -36,12 +37,12 @@ public class DeviceService {
         final String type = DeviceType.WASHER;
         final String manufacturer = "제조사";
 
-        Mono<DeviceExternalApiResponse> responseMono = getDeviceResponse(param.getCode());
-//        Mono<DeviceExternalApiResponse> responseMono = Mono.just(DeviceExternalApiResponse.builder()
-//                .model(model)
-//                .type(type)
-//                .manufacturer(manufacturer)
-//                .build());
+//        Mono<DeviceExternalApiResponse> responseMono = getDeviceResponse(param.getCode());
+        Mono<DeviceExternalApiResponse> responseMono = Mono.just(DeviceExternalApiResponse.builder()
+                .model(model)
+                .type(type)
+                .manufacturer(manufacturer)
+                .build());
         // ****************************************
 
         // response data
@@ -82,5 +83,20 @@ public class DeviceService {
                 .map(DeviceResponse::of);
     }
 
+    public Mono<String> update(String deviceId, DeviceUpdateParam param) {
+        return deviceRepository.findById(deviceId)
+                .switchIfEmpty(Mono.error(new DeviceNotFoundException("기기를 찾을 수 없습니다 : " + deviceId)))
+                .flatMap(device -> {
+                    device.setNickname(param.getDeviceName());
+                    return deviceRepository.save(device)
+                            .then(Mono.just("기기 이름이 성공적으로 수정되었습니다."));
+                });
+    }
 
+    public Mono<String> delete(String deviceId) {
+        return deviceRepository.findById(deviceId)
+                .switchIfEmpty(Mono.error(new DeviceNotFoundException("기기를 찾을 수 없습니다 : " + deviceId)))
+                .flatMap(device -> deviceRepository.delete(device)
+                        .then(Mono.just("기기가 성공적으로 삭제되었습니다.")));
+    }
 }
