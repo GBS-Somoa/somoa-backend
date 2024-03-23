@@ -33,12 +33,12 @@ public class DeviceService {
         final String type = "타입";
         final String manufacturer = "제조사";
 
-        // Mono<DeviceResponse> responseMono = getDeviceResponse(param.getCode());
-            Mono<DeviceResponse> responseMono = Mono.just(DeviceResponse.builder()
-                    .model(model)
-                    .type(type)
-                    .manufacturer(manufacturer)
-                    .build());
+//        Mono<DeviceResponse> responseMono = getDeviceResponse(param.getCode());
+        Mono<DeviceResponse> responseMono = Mono.just(DeviceResponse.builder()
+                .model(model)
+                .type(type)
+                .manufacturer(manufacturer)
+                .build());
         // ****************************************
 
         // response data
