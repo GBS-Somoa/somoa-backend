@@ -72,13 +72,13 @@ public class GroupService {
 
     @Transactional
     public Mono<Map<String, Object>> modify(Integer userId, Integer groupId, GroupModifyParam param) {
-        return groupUserRepository.findGroupManager(groupId)
-            .flatMap(managerId -> {
-                if (!managerId.equals(userId)) {
-                    return Mono.error(new IllegalArgumentException("그룹 수정 권한이 없는 유저입니다."));
-                } else {
-                    return groupRepository.findById(groupId)
-                        .flatMap(group -> {
+        return groupRepository.findById(groupId)
+            .flatMap(group -> {
+                return groupUserRepository.findGroupManager(group.getId())
+                    .flatMap(managerId -> {
+                        if (!managerId.equals(userId)) {
+                            return Mono.error(new IllegalArgumentException("그룹 수정 권한이 없는 유저입니다."));
+                        } else {
                             group.setName(param.getGroupName());
                             return groupRepository.save(group)
                                 .map(modifiedGroup -> {
@@ -87,10 +87,31 @@ public class GroupService {
                                     data.put("groupName", group.getName());
                                     return data;
                                 });
-                        })
-                        .switchIfEmpty(Mono.error(new IllegalArgumentException("유효하지 않는 그룹 번호입니다.")));
-                }
-            });
+                        }
+                    });
+            })
+            .switchIfEmpty(Mono.defer(() -> Mono.error(new IllegalArgumentException("유효하지 않는 그룹 번호입니다."))));
+    }
+
+    @Transactional
+    public Mono<?> delete(Integer userId, Integer groupId) {
+        return groupRepository.findById(groupId)
+            .flatMap(group -> {
+                return groupUserRepository.findGroupManager(group.getId())
+                    .flatMap(managerId -> {
+                        if (!managerId.equals(userId)) {
+                            return Mono.error(new IllegalArgumentException("그룹 삭제 권한이 없는 유저입니다."));
+                        } else {
+                            return groupRepository.delete(group)
+                                .then(Mono.fromCallable(() -> {
+                                    Map<String, Object> data = new HashMap<>();
+                                    data.put("groupId", groupId);
+                                    return data;
+                                }));
+                        }
+                    });
+            })
+            .switchIfEmpty(Mono.defer(() -> Mono.error(new IllegalArgumentException("유효하지 않는 그룹 번호입니다."))));
     }
 
     @Transactional

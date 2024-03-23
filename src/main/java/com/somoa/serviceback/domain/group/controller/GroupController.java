@@ -2,6 +2,7 @@ package com.somoa.serviceback.domain.group.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -58,9 +59,19 @@ public class GroupController {
 
     @PatchMapping("/{groupId}")
     public Mono<ResponseEntity<ResponseHandler>> modify(@PathVariable("groupId") Integer groupId,
-                                                        @RequestBody GroupModifyParam param) {
+        @RequestBody GroupModifyParam param) {
         return groupService.modify(userId, groupId, param)
             .flatMap(data -> ResponseHandler.ok(data, "그룹 정보를 수정했습니다."))
+            .onErrorResume(error -> {
+                log.error("error occurs!!", error);
+                return ResponseHandler.error("internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
+            });
+    }
+
+    @DeleteMapping("/{groupId}")
+    public Mono<ResponseEntity<ResponseHandler>> delete(@PathVariable("groupId") Integer groupId) {
+        return groupService.delete(userId, groupId)
+            .flatMap(data -> ResponseHandler.ok(data, "그룹을 삭제했습니다."))
             .onErrorResume(error -> {
                 log.error("error occurs!!", error);
                 return ResponseHandler.error("internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
