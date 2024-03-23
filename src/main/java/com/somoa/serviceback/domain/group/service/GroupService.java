@@ -1,6 +1,7 @@
 package com.somoa.serviceback.domain.group.service;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.stereotype.Service;
@@ -11,6 +12,7 @@ import com.somoa.serviceback.domain.group.dto.GroupModifyParam;
 import com.somoa.serviceback.domain.group.dto.GroupRegisterParam;
 import com.somoa.serviceback.domain.group.dto.GroupResponse;
 import com.somoa.serviceback.domain.group.dto.GroupUserRegisterParam;
+import com.somoa.serviceback.domain.group.dto.GroupUserResponse;
 import com.somoa.serviceback.domain.group.entity.Group;
 import com.somoa.serviceback.domain.group.entity.GroupUser;
 import com.somoa.serviceback.domain.group.entity.GroupUserRole;
@@ -60,12 +62,11 @@ public class GroupService {
         return groupUserRepository.existsGroupUser(groupId, userId)
             .flatMap(userExists -> {
                 if (userExists) {
-                    return groupRepository.findByIdWithUserInfo(groupId, userId)
-                        .flatMap(group -> groupUserRepository.findAllSimple(groupId)
-                            .collectList()
-                            .map(groupMembers -> GroupDetailResponse.of(group, groupMembers)));
+                    return groupRepository.findById(groupId)
+                        .flatMap(group -> groupUserRepository.findGroupUser(groupId, userId)
+                            .map(groupUser -> GroupDetailResponse.of(group, groupUser)));
                 } else {
-                    return Mono.error(new IllegalArgumentException("그룹에 대한 권한이 없는 유저입니다."));
+                    return Mono.error(new IllegalArgumentException("그룹 번호가 유효하지 않거나, 그룹에 속하지 않은 유저입니다."));
                 }
             });
     }
@@ -75,8 +76,8 @@ public class GroupService {
         return groupRepository.findById(groupId)
             .flatMap(group -> {
                 return groupUserRepository.findGroupManager(group.getId())
-                    .flatMap(managerId -> {
-                        if (!managerId.equals(userId)) {
+                    .flatMap(groupManager -> {
+                        if (!groupManager.getId().equals(userId)) {
                             return Mono.error(new IllegalArgumentException("그룹 수정 권한이 없는 유저입니다."));
                         } else {
                             group.setName(param.getGroupName());
@@ -98,8 +99,8 @@ public class GroupService {
         return groupRepository.findById(groupId)
             .flatMap(group -> {
                 return groupUserRepository.findGroupManager(group.getId())
-                    .flatMap(managerId -> {
-                        if (!managerId.equals(userId)) {
+                    .flatMap(groupManager -> {
+                        if (!groupManager.getId().equals(userId)) {
                             return Mono.error(new IllegalArgumentException("그룹 삭제 권한이 없는 유저입니다."));
                         } else {
                             return groupRepository.delete(group)
@@ -122,6 +123,18 @@ public class GroupService {
                     }
                 })
             .switchIfEmpty(Mono.defer(() -> Mono.error(new IllegalArgumentException("그룹에 속하지 않은 유저입니다."))));
+    }
+
+    public Mono<List<GroupUserResponse>> getMembers(Integer userId, Integer groupId) {
+        return groupUserRepository.existsGroupUser(groupId, userId)
+            .flatMap(userExists -> {
+                if (userExists) {
+                    return groupUserRepository.findAllByGroupId(groupId)
+                        .collectList();
+                } else {
+                    return Mono.error(new IllegalArgumentException("그룹 번호가 유효하지 않거나, 그룹에 속하지 않은 유저입니다."));
+                }
+            });
     }
 
     @Transactional
