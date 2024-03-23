@@ -88,9 +88,19 @@ public class GroupController {
             });
     }
 
+    @GetMapping("/{groupId}/users")
+    public Mono<ResponseEntity<ResponseHandler>> getGroupMembers(@PathVariable("groupId") Integer groupId) {
+        return groupService.getMembers(userId, groupId)
+            .flatMap(data -> ResponseHandler.ok(data, "그룹 멤버를 조회했습니다."))
+            .onErrorResume(error -> {
+                log.error("error occurs!!", error);
+                return ResponseHandler.error("internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
+            });
+    }
+
     @PostMapping("/{groupId}/users")
     public Mono<ResponseEntity<ResponseHandler>> addGroupMember(@PathVariable("groupId") Integer groupId,
-                                                                @RequestBody GroupUserRegisterParam param) {
+        @RequestBody GroupUserRegisterParam param) {
         return groupService.addMember(groupId, param)
             .flatMap(data -> ResponseHandler.ok(data, "멤버를 추가했습니다."))
             .onErrorResume(error -> {
