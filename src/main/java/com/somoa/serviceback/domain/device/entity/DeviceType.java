@@ -1,40 +1,15 @@
 package com.somoa.serviceback.domain.device.entity;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
+public class DeviceType {
 
-public enum DeviceType {
-
-    WASHER("washer"),
-    REFRIGERATOR("refrigerator"),
-    STREAM_CLOSET("streamCloset"),
-    DISHWASHER("dishwasher"),
-    WATER_PURIFIER("waterPurifier"),
-    DEHUMIDIFIER("dehumidifier"),
-    AIR_PURIFIER("airPurifier"),
-    VACUUM_CLEANER("vacuumCleaner"),
-    AIR_CONDITIONER("airConditioner"),
-    HUMIDIFIER("humidifier"),
-    ;
-
-    private final String value;
-
-    DeviceType(String value) {
-        this.value = value;
-    }
-
-    @JsonValue
-    public String getValue() {
-        return this.value;
-    }
-
-    @JsonCreator
-    public static DeviceType fromValue(String value) {
-        for (DeviceType type : DeviceType.values()) {
-            if (type.getValue().equals(value)) {
-                return type;
-            }
-        }
-        throw new IllegalArgumentException("Unsupported Device Type : " + value);
-    }
+    public static final String WASHER = "washer";
+    public static final String REFRIGERATOR = "refrigerator";
+    public static final String STREAM_CLOSET = "steamCloset";
+    public static final String DISHWASHER = "dishwasher";
+    public static final String WATER_PURIFIER = "waterPurifier";
+    public static final String DEHUMIDIFIER = "dehumidifier";
+    public static final String AIR_PURIFIER = "airPurifier";
+    public static final String VACUUM_CLEANER = "vacuumCleaner";
+    public static final String AIR_CONDITIONER = "airConditioner";
+    public static final String HUMIDIFIER = "humidifier";
 }

@@ -9,6 +9,6 @@ import lombok.Data;
 public class DeviceExternalApiResponse {
 
     private String model;
-    private DeviceType type;
+    private String type;
     private String manufacturer;
 }

@@ -2,10 +2,13 @@ package com.somoa.serviceback.domain.device.service;
 
 import com.somoa.serviceback.domain.device.dto.DeviceRegisterParam;
 import com.somoa.serviceback.domain.device.dto.DeviceExternalApiResponse;
+import com.somoa.serviceback.domain.device.dto.DeviceResponse;
 import com.somoa.serviceback.domain.device.entity.Device;
 import com.somoa.serviceback.domain.device.entity.DeviceType;
+import com.somoa.serviceback.domain.device.exception.DeviceNotFoundException;
 import com.somoa.serviceback.domain.device.repository.DeviceRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -15,6 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class DeviceService {
 
@@ -29,15 +33,15 @@ public class DeviceService {
         // device_id : param.getCode();
         // API 호출의 응답으로 변경될 예정(현재는 dummy data)
         final String model = "모델 이름";
-        final DeviceType type = DeviceType.WASHER;
+        final String type = DeviceType.WASHER;
         final String manufacturer = "제조사";
 
-//        Mono<DeviceExternalApiResponse> responseMono = getDeviceResponse(param.getCode());
-        Mono<DeviceExternalApiResponse> responseMono = Mono.just(DeviceExternalApiResponse.builder()
-                .model(model)
-                .type(type)
-                .manufacturer(manufacturer)
-                .build());
+        Mono<DeviceExternalApiResponse> responseMono = getDeviceResponse(param.getCode());
+//        Mono<DeviceExternalApiResponse> responseMono = Mono.just(DeviceExternalApiResponse.builder()
+//                .model(model)
+//                .type(type)
+//                .manufacturer(manufacturer)
+//                .build());
         // ****************************************
 
         // response data
@@ -71,4 +75,12 @@ public class DeviceService {
                 .retrieve()
                 .bodyToMono(DeviceExternalApiResponse.class);
     }
+
+    public Mono<DeviceResponse> findById(String deviceId) {
+        return deviceRepository.findById(deviceId)
+                .switchIfEmpty(Mono.error(new DeviceNotFoundException("기기를 찾을 수 없습니다 : " + deviceId)))
+                .map(DeviceResponse::of);
+    }
+
+
 }

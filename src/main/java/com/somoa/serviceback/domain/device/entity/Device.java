@@ -24,7 +24,7 @@ public class Device {
     private String manufacturer;
 
     @Column("device_type")
-    private DeviceType type;
+    private String type;
 
     @Column("device_model")
     private String model;
