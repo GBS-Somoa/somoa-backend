@@ -94,6 +94,27 @@ public class GroupService {
     }
 
     @Transactional
+    public Mono<?> delete(Integer userId, Integer groupId) {
+        return groupRepository.findById(groupId)
+            .flatMap(group -> {
+                return groupUserRepository.findGroupManager(group.getId())
+                    .flatMap(managerId -> {
+                        if (!managerId.equals(userId)) {
+                            return Mono.error(new IllegalArgumentException("그룹 삭제 권한이 없는 유저입니다."));
+                        } else {
+                            return groupRepository.delete(group)
+                                .then(Mono.fromCallable(() -> {
+                                    Map<String, Object> data = new HashMap<>();
+                                    data.put("groupId", groupId);
+                                    return data;
+                                }));
+                        }
+                    });
+            })
+            .switchIfEmpty(Mono.defer(() -> Mono.error(new IllegalArgumentException("유효하지 않는 그룹 번호입니다."))));
+    }
+
+    @Transactional
     public Mono<Map<String, Object>> addMember(Integer groupId, GroupUserRegisterParam param) {
         final Integer userId = param.getUserId();
 
