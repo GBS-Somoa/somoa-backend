@@ -1,9 +1,9 @@
-package com.somoa.serviceback.domain.groupuser.repository;
+package com.somoa.serviceback.domain.group.repository;
 
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 
-import com.somoa.serviceback.domain.groupuser.entity.GroupUser;
+import com.somoa.serviceback.domain.group.entity.GroupUser;
 import com.somoa.serviceback.domain.user.dto.UserSimpleResponse;
 
 import reactor.core.publisher.Flux;

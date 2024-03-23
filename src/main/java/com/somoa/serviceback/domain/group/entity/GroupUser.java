@@ -1,4 +1,4 @@
-package com.somoa.serviceback.domain.groupuser.entity;
+package com.somoa.serviceback.domain.group.entity;
 
 import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.data.annotation.Id;

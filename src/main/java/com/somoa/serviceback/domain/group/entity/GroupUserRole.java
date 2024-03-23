@@ -1,4 +1,4 @@
-package com.somoa.serviceback.domain.groupuser.entity;
+package com.somoa.serviceback.domain.group.entity;
 
 public class GroupUserRole {
 
