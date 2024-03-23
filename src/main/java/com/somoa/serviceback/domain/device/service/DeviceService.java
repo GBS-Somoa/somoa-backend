@@ -1,8 +1,9 @@
 package com.somoa.serviceback.domain.device.service;
 
 import com.somoa.serviceback.domain.device.dto.DeviceRegisterParam;
-import com.somoa.serviceback.domain.device.dto.DeviceResponse;
+import com.somoa.serviceback.domain.device.dto.DeviceExternalApiResponse;
 import com.somoa.serviceback.domain.device.entity.Device;
+import com.somoa.serviceback.domain.device.entity.DeviceType;
 import com.somoa.serviceback.domain.device.repository.DeviceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -28,11 +29,11 @@ public class DeviceService {
         // device_id : param.getCode();
         // API 호출의 응답으로 변경될 예정(현재는 dummy data)
         final String model = "모델 이름";
-        final String type = "타입";
+        final DeviceType type = DeviceType.WASHER;
         final String manufacturer = "제조사";
 
-//        Mono<DeviceResponse> responseMono = getDeviceResponse(param.getCode());
-        Mono<DeviceResponse> responseMono = Mono.just(DeviceResponse.builder()
+//        Mono<DeviceExternalApiResponse> responseMono = getDeviceResponse(param.getCode());
+        Mono<DeviceExternalApiResponse> responseMono = Mono.just(DeviceExternalApiResponse.builder()
                 .model(model)
                 .type(type)
                 .manufacturer(manufacturer)
@@ -60,7 +61,7 @@ public class DeviceService {
                 ));
     }
 
-    public Mono<DeviceResponse> getDeviceResponse(String deviceId) {
+    public Mono<DeviceExternalApiResponse> getDeviceResponse(String deviceId) {
         WebClient webClient = WebClient.create(MANUFACTURER_SERVER_URL);
 
         return webClient.get()
@@ -68,6 +69,6 @@ public class DeviceService {
                         .queryParam(DEVICE_ID_QUERY_PARAM, deviceId)
                         .build())
                 .retrieve()
-                .bodyToMono(DeviceResponse.class);
+                .bodyToMono(DeviceExternalApiResponse.class);
     }
 }
