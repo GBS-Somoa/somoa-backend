@@ -2,6 +2,7 @@ package com.somoa.serviceback.domain.device.controller;
 
 import com.somoa.serviceback.domain.device.dto.DeviceUpdateParam;
 import com.somoa.serviceback.domain.device.exception.DeviceNotFoundException;
+import com.somoa.serviceback.global.aop.UserContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,9 +22,10 @@ import reactor.core.publisher.Mono;
 public class DeviceController {
 
     private final DeviceService deviceService;
+    private Integer userId = 1;
 
     @PostMapping
-    private Mono<ResponseEntity<ResponseHandler>> register(@RequestBody DeviceRegisterParam param) {
+    public Mono<ResponseEntity<ResponseHandler>> register(@RequestBody DeviceRegisterParam param) {
 //        Integer userId = 1;     // Token에서 userId 정보 추출
         return deviceService.save(param)
                 .flatMap(data -> ResponseHandler.ok(data,"기기를 등록했습니다."))
@@ -31,22 +33,22 @@ public class DeviceController {
     }
 
     @GetMapping("/{deviceId}")
-    private Mono<ResponseEntity<ResponseHandler>> getDevice(@PathVariable String deviceId) {
+    public Mono<ResponseEntity<ResponseHandler>> findOne(@PathVariable String deviceId) {
         return deviceService.findById(deviceId)
                 .flatMap(data -> ResponseHandler.ok(data, "기기 정보를 조회했습니다."))
                 .onErrorResume(this::handleError);
     }
 
     @PatchMapping("/{deviceId}")
-    private Mono<ResponseEntity<ResponseHandler>> updateDevice(@PathVariable String deviceId, @RequestBody DeviceUpdateParam param) {
-        return deviceService.update(deviceId, param)
+    public Mono<ResponseEntity<ResponseHandler>> update(@PathVariable String deviceId, @RequestBody DeviceUpdateParam param) {
+        return deviceService.update(userId, deviceId, param)
                 .flatMap(ResponseHandler::noContent)
                 .onErrorResume(this::handleError);
     }
 
     @DeleteMapping("/{deviceId}")
-    private Mono<ResponseEntity<ResponseHandler>> deleteDevice(@PathVariable String deviceId) {
-        return deviceService.delete(deviceId)
+    public Mono<ResponseEntity<ResponseHandler>> delete(@PathVariable String deviceId) {
+        return deviceService.delete(userId, deviceId)
                 .flatMap(ResponseHandler::noContent)
                 .onErrorResume(this::handleError);
     }

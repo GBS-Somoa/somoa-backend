@@ -8,6 +8,8 @@ import com.somoa.serviceback.domain.device.entity.Device;
 import com.somoa.serviceback.domain.device.entity.DeviceType;
 import com.somoa.serviceback.domain.device.exception.DeviceNotFoundException;
 import com.somoa.serviceback.domain.device.repository.DeviceRepository;
+import com.somoa.serviceback.domain.groupuser.entity.GroupUserRole;
+import com.somoa.serviceback.domain.groupuser.repository.GroupUserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,6 +26,8 @@ import java.util.Map;
 public class DeviceService {
 
     private final DeviceRepository deviceRepository;
+    private final GroupUserRepository groupUserRepository;
+
     private final String MANUFACTURER_SERVER_URL = "http://localhost:9090";
     private final String DEVICE_API_PATH = "/api/device";
     private final String DEVICE_ID_QUERY_PARAM = "device_id";
@@ -83,20 +87,36 @@ public class DeviceService {
                 .map(DeviceResponse::of);
     }
 
-    public Mono<String> update(String deviceId, DeviceUpdateParam param) {
+    public Mono<String> update(Integer userId, String deviceId, DeviceUpdateParam param) {
         return deviceRepository.findById(deviceId)
                 .switchIfEmpty(Mono.error(new DeviceNotFoundException("기기를 찾을 수 없습니다 : " + deviceId)))
-                .flatMap(device -> {
-                    device.setNickname(param.getDeviceName());
-                    return deviceRepository.save(device)
-                            .then(Mono.just("기기 이름이 성공적으로 수정되었습니다."));
-                });
+                .flatMap(device -> deviceRepository.findGroupByDeviceId(deviceId)
+                        .flatMap(group -> groupUserRepository.findRole(group.getId(), userId)
+                                .switchIfEmpty(Mono.error(new IllegalArgumentException("사용자에게 권한이 없습니다.")))
+                                .flatMap(role -> {
+                                    if (!role.equals(GroupUserRole.USER_ONLY_SUPPLY_MANAGE)) {
+                                        device.setNickname(param.getDeviceName());
+                                        return deviceRepository.save(device)
+                                                .then(Mono.just("기기 이름이 성공적으로 수정되었습니다."));
+                                    } else {
+                                        return Mono.error(new IllegalArgumentException("사용자에게 권한이 없습니다."));
+                                    }
+                                })));
     }
 
-    public Mono<String> delete(String deviceId) {
+    public Mono<String> delete(Integer userId, String deviceId) {
         return deviceRepository.findById(deviceId)
                 .switchIfEmpty(Mono.error(new DeviceNotFoundException("기기를 찾을 수 없습니다 : " + deviceId)))
-                .flatMap(device -> deviceRepository.delete(device)
-                        .then(Mono.just("기기가 성공적으로 삭제되었습니다.")));
+                .flatMap(device -> deviceRepository.findGroupByDeviceId(deviceId)
+                        .flatMap(group -> groupUserRepository.findRole(group.getId(), userId)
+                                .switchIfEmpty(Mono.error(new IllegalArgumentException("사용자에게 권한이 없습니다.")))
+                                .flatMap(role -> {
+                                    if (!role.equals(GroupUserRole.USER_ONLY_SUPPLY_MANAGE)) {
+                                        return deviceRepository.delete(device)
+                                                .then(Mono.just("기기가 성공적으로 삭제되었습니다."));
+                                    } else {
+                                        return Mono.error(new IllegalArgumentException("사용자에게 권한이 없습니다."));
+                                    }
+                                })));
     }
 }

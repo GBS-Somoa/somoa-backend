@@ -22,4 +22,9 @@ public interface GroupUserRepository extends ReactiveCrudRepository<GroupUser, I
 		+ "	    ON gu.user_id = u.user_id"
 		+ "  WHERE gu.group_id = :groupId")
 	Flux<UserSimpleResponse> findAllSimple(Integer groupId);
+
+	@Query("SELECT role"
+		+ "	  FROM group_user"
+		+ "	 WHERE group_id = :groupId AND user_id = :userId")
+	Mono<String> findRole(Integer groupId, Integer userId);
 }
