@@ -173,7 +173,7 @@ public class GroupService {
             .flatMap(group -> groupUserRepository.findGroupManager(group.getId())
                 .flatMap(groupManager -> {
                     if (!groupManager.getId().equals(userId)) {
-                        return Mono.error(new IllegalArgumentException("그룹 삭제 권한이 없는 유저입니다."));
+                        return Mono.error(new IllegalArgumentException("그룹 멤버 수정 권한이 없는 유저입니다."));
                     }
 
                     return groupUserRepository.findGroupUser(group.getId(), targetUserId)
