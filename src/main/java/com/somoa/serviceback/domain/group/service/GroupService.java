@@ -18,6 +18,7 @@ import com.somoa.serviceback.domain.group.entity.GroupUser;
 import com.somoa.serviceback.domain.group.entity.GroupUserRole;
 import com.somoa.serviceback.domain.group.repository.GroupRepository;
 import com.somoa.serviceback.domain.group.repository.GroupUserRepository;
+import com.somoa.serviceback.domain.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -29,6 +30,7 @@ public class GroupService {
 
     private final GroupRepository groupRepository;
     private final GroupUserRepository groupUserRepository;
+    private final UserRepository userRepository;
 
     @Transactional
     public Mono<Map<String, Object>> save(Integer userId, GroupRegisterParam param) {
@@ -138,32 +140,27 @@ public class GroupService {
     }
 
     @Transactional
-    public Mono<Map<String, Object>> addMember(Integer groupId, GroupUserRegisterParam param) {
+    public Mono<Integer> addMember(Integer groupId, GroupUserRegisterParam param) {
         final Integer userId = param.getUserId();
 
-        // response data
-        Map<String, Object> data = new HashMap<>();
-        data.put("groupId", groupId);
-        data.put("userId", userId);
-
-        return groupUserRepository.existsGroupUser(groupId, userId)
-            .flatMap(userExists -> {
-                if (userExists) {
-                    return Mono.error(new IllegalArgumentException("이미 그룹에 등록된 유저입니다."));
-                } else {
-                    return Mono.defer(() -> {
-                            GroupUser groupUser = GroupUser.builder()
-                                .groupId(groupId)
-                                .userId(userId)
-                                .role(GroupUserRole.USER_ALL)
-                                .orderedNum(0)  // TODO: orderNum 맨 마지막으로 할당해야 함
-                                .alarm(true)
-                                .build();
-                            return groupUserRepository.save(groupUser)
-                                .then(Mono.just(data));
-                        }
-                    );
-                }
-            });
+        return userRepository.findById(userId)
+                .flatMap(user -> groupRepository.findById(groupId)
+                    .flatMap(group -> groupUserRepository.existsGroupUser(group.getId(), userId)
+                        .flatMap(userExists -> {
+                            if (userExists) {
+                                return Mono.error(new IllegalArgumentException("이미 그룹에 등록된 유저입니다."));
+                            } else {
+                                return Mono.defer(() -> groupUserRepository.save(GroupUser.builder()
+                                        .groupId(groupId)
+                                        .userId(userId)
+                                        .role(GroupUserRole.USER_ALL)
+                                        .orderedNum(0)  // TODO: orderNum 맨 마지막으로 할당해야 함
+                                        .alarm(true)
+                                        .build())
+                                    .map(GroupUser::getId));
+                            }
+                        }))
+                    .switchIfEmpty(Mono.defer(() -> Mono.error(new IllegalArgumentException("유효하지 않는 그룹 번호입니다.")))))
+            .switchIfEmpty(Mono.defer(() -> Mono.error(new IllegalArgumentException("존재하지 않는 유저입니다."))));
     }
 }
