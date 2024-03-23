@@ -94,7 +94,7 @@ public class GroupService {
     }
 
     @Transactional
-    public Mono<?> delete(Integer userId, Integer groupId) {
+    public Mono<Integer> delete(Integer userId, Integer groupId) {
         return groupRepository.findById(groupId)
             .flatMap(group -> {
                 return groupUserRepository.findGroupManager(group.getId())
@@ -103,15 +103,25 @@ public class GroupService {
                             return Mono.error(new IllegalArgumentException("그룹 삭제 권한이 없는 유저입니다."));
                         } else {
                             return groupRepository.delete(group)
-                                .then(Mono.fromCallable(() -> {
-                                    Map<String, Object> data = new HashMap<>();
-                                    data.put("groupId", groupId);
-                                    return data;
-                                }));
+                                .then(Mono.just(group.getId()));
                         }
                     });
             })
             .switchIfEmpty(Mono.defer(() -> Mono.error(new IllegalArgumentException("유효하지 않는 그룹 번호입니다."))));
+    }
+
+    @Transactional
+    public Mono<Integer> leave(Integer userId, Integer groupId) {
+        return groupUserRepository.findGroupUser(groupId, userId)
+            .flatMap(existingGroupUser -> {
+                    if (existingGroupUser.getRole().equals(GroupUserRole.MANAGER)) {
+                        return Mono.error(new RuntimeException("관리자는 그룹에서 나갈 수 없습니다."));
+                    } else {
+                        return groupUserRepository.delete(existingGroupUser)
+                                .then(Mono.just(existingGroupUser.getId()));
+                    }
+                })
+            .switchIfEmpty(Mono.defer(() -> Mono.error(new IllegalArgumentException("그룹에 속하지 않은 유저입니다."))));
     }
 
     @Transactional

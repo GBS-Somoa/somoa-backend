@@ -78,6 +78,16 @@ public class GroupController {
             });
     }
 
+    @DeleteMapping("/{groupId}/leave")
+    public Mono<ResponseEntity<ResponseHandler>> leave(@PathVariable("groupId") Integer groupId) {
+        return groupService.leave(userId, groupId)
+            .flatMap(data -> ResponseHandler.ok(data, "그룹에서 나갔습니다."))
+            .onErrorResume(error -> {
+                log.error("error occurs!!", error);
+                return ResponseHandler.error("internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
+            });
+    }
+
     @PostMapping("/{groupId}/users")
     public Mono<ResponseEntity<ResponseHandler>> addGroupMember(@PathVariable("groupId") Integer groupId,
                                                                 @RequestBody GroupUserRegisterParam param) {
