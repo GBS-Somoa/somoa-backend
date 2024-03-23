@@ -2,10 +2,7 @@ package com.somoa.serviceback.domain.device.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.somoa.serviceback.domain.device.dto.DeviceRegisterParam;
 import com.somoa.serviceback.domain.device.service.DeviceService;
@@ -31,6 +28,16 @@ public class DeviceController {
                 .onErrorResume(error -> {
                     log.error("error occurs!!", error);
                     return ResponseHandler.error("internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
+                });
+    }
+
+    @GetMapping("/{deviceId}")
+    private Mono<ResponseEntity<ResponseHandler>> getDevice(@PathVariable String deviceId) {
+        return deviceService.findById(deviceId)
+                .flatMap(data -> ResponseHandler.ok(data, "기기 정보를 조회했습니다."))
+                .onErrorResume(error -> {
+                    log.error("error occurs!!", error);
+                    return ResponseHandler.error(error.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
                 });
     }
 }
