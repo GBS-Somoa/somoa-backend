@@ -163,4 +163,33 @@ public class GroupService {
                     .switchIfEmpty(Mono.defer(() -> Mono.error(new IllegalArgumentException("유효하지 않는 그룹 번호입니다.")))))
             .switchIfEmpty(Mono.defer(() -> Mono.error(new IllegalArgumentException("존재하지 않는 유저입니다."))));
     }
+
+    @Transactional
+    public Mono<Map<String, Object>> modifyMemberPermission(Integer userId, Integer groupId, Integer targetUserId, String role) {
+        if (!GroupUserRole.isValidRole(role))
+            return Mono.error(new IllegalArgumentException("유효하지 않는 그룹 유저 권한입니다."));
+        
+        return groupRepository.findById(groupId)
+            .flatMap(group -> groupUserRepository.findGroupManager(group.getId())
+                .flatMap(groupManager -> {
+                    if (!groupManager.getId().equals(userId)) {
+                        return Mono.error(new IllegalArgumentException("그룹 멤버 수정 권한이 없는 유저입니다."));
+                    }
+
+                    return groupUserRepository.findGroupUser(group.getId(), targetUserId)
+                        .flatMap(targetUser -> {
+                            targetUser.setRole(role);
+                            return groupUserRepository.save(targetUser)
+                                .map(updatedUser -> {
+                                    Map<String, Object> data = new HashMap<>();
+                                    data.put("groupId", updatedUser.getGroupId());
+                                    data.put("userId", updatedUser.getUserId());
+                                    data.put("role", updatedUser.getRole());
+                                    return data;
+                                });
+                        })
+                        .switchIfEmpty(Mono.defer(() -> Mono.error(new IllegalArgumentException("존재하지 않는 유저입니다."))));
+                }))
+            .switchIfEmpty(Mono.defer(() -> Mono.error(new IllegalArgumentException("유효하지 않는 그룹 번호입니다."))));
+    }
 }
