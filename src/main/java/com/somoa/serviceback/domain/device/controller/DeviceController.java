@@ -2,7 +2,6 @@ package com.somoa.serviceback.domain.device.controller;
 
 import com.somoa.serviceback.domain.device.dto.DeviceUpdateParam;
 import com.somoa.serviceback.domain.device.exception.DeviceNotFoundException;
-import com.somoa.serviceback.global.aop.UserContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
