@@ -1,12 +1,13 @@
 package com.somoa.serviceback.domain.device.entity;
 
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.Column;
-import org.springframework.data.relational.core.mapping.Table;
 
 @Table("device")
 @Data
@@ -17,10 +18,7 @@ public class Device {
 
     @Id
     @Column("device_id")
-    private Integer id;
-
-    @Column("device_code")
-    private String code;
+    private String id;
 
     @Column("device_manufacturer")
     private String manufacturer;
