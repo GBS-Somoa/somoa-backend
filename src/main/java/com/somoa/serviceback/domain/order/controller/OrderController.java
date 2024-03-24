@@ -37,9 +37,8 @@ public class OrderController {
 
     @PatchMapping("/{order_id}")
     public Mono<ResponseEntity<ResponseHandler>> updateOrderStatus(@PathVariable("order_id") String orderId, @RequestBody OrderStatusUpdateDto orderStatusUpdateDto) {
-        System.out.println(orderId + " " + orderStatusUpdateDto.getOrderStatus());
         return orderService.updateOrderStatus(orderId, orderStatusUpdateDto)
-                .flatMap(order -> ResponseHandler.ok("", "주문 상태 변경에 성공했습니다."))
+                .flatMap(order -> ResponseHandler.ok(null, "주문 상태 변경에 성공했습니다."))
                 .onErrorResume(error -> {
                     if (error instanceof IllegalArgumentException) {
                         return ResponseHandler.error(error.getMessage(), HttpStatus.BAD_REQUEST);

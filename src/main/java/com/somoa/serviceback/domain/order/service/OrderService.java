@@ -38,6 +38,15 @@ public class OrderService {
                         .orderCount(orderSaveDto.getOrderCount())
                         .orderAmount(orderSaveDto.getOrderAmount())
                         .build()))
+                // TODO: supplyId에 해당하는 소모품 임시 용량 추가
+//                .flatMap(order -> {
+//                    return supplyRepository.findById(order.getSupplyId())
+//                            .flatMap(supply -> {
+//                                supply.setAmountTmp(supply.getAmountTmp() + order.getOrderCount());
+//                                return supplyRepository.save(supply);
+//                            })
+//                            .thenReturn(order);
+//                })
                 .map(order -> {
                     Map<String, Object> response = new HashMap<>();
                     response.put("id", order.getId());
@@ -52,6 +61,25 @@ public class OrderService {
                     order.setOrderStatus(orderStatusUpdateDto.getOrderStatus());
                     return orderRepository.save(order);
                 })
+                // TODO: 주문 상태 = 배송 완료로 변경 시 supplyId에 해당하는 소모품 임시 용량 값 -> 실제 용량 값에 반영
+                // TODO: FCM 알림 전송
+//                .flatMap(order -> {
+//                    if ("배송 완료".equals(order.getOrderStatus())) {
+//                        return supplyRepository.findById(order.getSupplyId())
+//                                .flatMap(supply -> {
+//                                    supply.setAmount(supply.getAmount() + supply.getAmountTmp());
+//                                    supply.setAmountTmp(0);
+//                                    return supplyRepository.save(supply);
+//                                })
+//                                .thenReturn(order);
+//                    } else {
+//                        return Mono.just(order);
+//                    }
+//                })
+//                .flatMap(order -> {
+//                    return fcmService.sendNotification(order.getOrderStatus())
+//                            .thenReturn(order);
+//                })
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("주문을 찾을 수 없습니다.")));
     }
 }
