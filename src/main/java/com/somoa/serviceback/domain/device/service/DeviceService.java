@@ -10,14 +10,24 @@ import com.somoa.serviceback.domain.device.exception.DeviceNotFoundException;
 import com.somoa.serviceback.domain.device.repository.DeviceRepository;
 import com.somoa.serviceback.domain.groupuser.entity.GroupUserRole;
 import com.somoa.serviceback.domain.groupuser.repository.GroupUserRepository;
+import com.somoa.serviceback.domain.supply.dto.SupplyRegisterParam;
+import com.somoa.serviceback.domain.supply.entity.DeviceSupply;
+import com.somoa.serviceback.domain.supply.entity.GroupSupply;
+import com.somoa.serviceback.domain.supply.entity.Supply;
+import com.somoa.serviceback.domain.supply.entity.SupplyType;
+import com.somoa.serviceback.domain.supply.repository.DeviceSupplyRepository;
+import com.somoa.serviceback.domain.supply.repository.GroupSupplyRepository;
+import com.somoa.serviceback.domain.supply.repository.SupplyRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -27,6 +37,9 @@ public class DeviceService {
 
     private final DeviceRepository deviceRepository;
     private final GroupUserRepository groupUserRepository;
+    private final SupplyRepository supplyRepository;
+    private final DeviceSupplyRepository deviceSupplyRepository;
+    private final GroupSupplyRepository groupSupplyRepository;
 
     private final String MANUFACTURER_SERVER_URL = "http://localhost:9090";
     private final String DEVICE_API_PATH = "/api/device";
@@ -53,21 +66,65 @@ public class DeviceService {
         Map<String, Object> data = new HashMap<>();
         data.put("deviceId", param.getCode());
 
-        return responseMono.flatMap(response -> deviceRepository.findById(param.getCode()))
+        return deviceRepository.findById(param.getCode())
                 .flatMap(existingDevice -> Mono.error(new IllegalArgumentException("이미 등록된 기기입니다.")))
-                .switchIfEmpty(responseMono.flatMap(response -> {
-                            Device device = Device.builder()
-                                    .id(param.getCode())
-                                    .groupId(param.getGroupId())
-                                    .nickname(param.getNickname())
-                                    .model(response.getModel())
-                                    .type(response.getType())
-                                    .manufacturer(response.getManufacturer())
-                                    .build();
-                            return deviceRepository.saveForce(device)
-                                .then(Mono.just(data));
-                        }
-                ));
+                .switchIfEmpty(responseMono.flatMap(response ->
+                                deviceRepository.saveForce(Device.builder()
+                                        .id(param.getCode())
+                                        .groupId(param.getGroupId())
+                                        .nickname(param.getNickname())
+                                        .model(response.getModel())
+                                        .type(response.getType())
+                                        .manufacturer(response.getManufacturer())
+                                        .build()
+                                )).then(Flux.fromIterable(param.getSupplies())
+                                .flatMap(supply -> saveSupply(param.getCode(), param.getGroupId(), supply))
+                                .then(Mono.just(data))
+                        )
+                );
+    }
+
+    private Mono<Supply> saveSupply(String deviceId, Integer groupId, SupplyRegisterParam param) {
+        Supply newSupply = Supply.builder()
+                .type(param.getType())
+                .name(param.getName())
+                .details(param.getAdditionalProperties())
+                .build();
+
+        if (!newSupply.getType().equals(SupplyType.DETERGENT)) {
+            return supplyRepository.save(newSupply)
+                    .flatMap(savedSupply -> deviceSupplyRepository.save(DeviceSupply.builder()
+                                    .deviceId(deviceId)
+                                    .supplyId(savedSupply.getId())
+                                    .build())
+                            .then(Mono.just(savedSupply)))
+                    .flatMap(savedSupply ->
+                            groupSupplyRepository.save(GroupSupply.builder()
+                                    .groupId(groupId)
+                                    .supplyId(savedSupply.getId())
+                                    .build()).thenReturn(savedSupply)
+                            );
+        }
+
+        return getSupplyByGroupIdAndType(groupId, param.getType())
+                .switchIfEmpty(Mono.defer(() -> supplyRepository.save(newSupply)
+                        .flatMap(savedSupply -> groupSupplyRepository.save(GroupSupply.builder()
+                                .groupId(groupId)
+                                .supplyId(savedSupply.getId())
+                                .build()).thenReturn(savedSupply))))
+                .flatMap(savedSupply -> deviceSupplyRepository.save(DeviceSupply.builder()
+                        .deviceId(deviceId)
+                        .supplyId(savedSupply.getId())
+                        .build()).thenReturn(savedSupply));
+    }
+
+    public Mono<Supply> getSupplyByGroupIdAndType(Integer groupId, String type) {
+        return groupSupplyRepository.findSupplyIdsByGroupId(groupId)
+            .collectList()
+            .flatMapMany(Flux::fromIterable)
+            .flatMap(supplyRepository::findById)
+            .filter(supply -> supply.getType().equals(type))
+            .next();
     }
 
     public Mono<DeviceExternalApiResponse> getDeviceResponse(String deviceId) {
