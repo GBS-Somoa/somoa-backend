@@ -11,6 +11,7 @@ import com.somoa.serviceback.domain.device.repository.DeviceRepository;
 import com.somoa.serviceback.domain.groupuser.entity.GroupUserRole;
 import com.somoa.serviceback.domain.groupuser.repository.GroupUserRepository;
 import com.somoa.serviceback.domain.supply.dto.SupplyRegisterParam;
+import com.somoa.serviceback.domain.supply.dto.SupplyResponse;
 import com.somoa.serviceback.domain.supply.entity.DeviceSupply;
 import com.somoa.serviceback.domain.supply.entity.GroupSupply;
 import com.somoa.serviceback.domain.supply.entity.Supply;
@@ -27,7 +28,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Service
@@ -88,7 +88,7 @@ public class DeviceService {
         Supply newSupply = Supply.builder()
                 .type(param.getType())
                 .name(param.getName())
-                .details(param.getAdditionalProperties())
+                .details(param.getDetails())
                 .build();
 
         if (!newSupply.getType().equals(SupplyType.DETERGENT)) {
@@ -141,7 +141,20 @@ public class DeviceService {
     public Mono<DeviceResponse> findById(String deviceId) {
         return deviceRepository.findById(deviceId)
                 .switchIfEmpty(Mono.error(new DeviceNotFoundException("기기를 찾을 수 없습니다 : " + deviceId)))
-                .map(DeviceResponse::of);
+                .flatMap(device -> deviceSupplyRepository.findSupplyIdsByDeviceId(deviceId)
+                        .collectList()
+                        .flatMapMany(Flux::fromIterable)
+                        .flatMap(supplyRepository::findById)
+                        .map(SupplyResponse::of)
+                        .collectList()
+                        .map(supplies -> DeviceResponse.builder()
+                                .id(device.getId())
+                                .nickname(device.getNickname())
+                                .model(device.getModel())
+                                .type(device.getType())
+                                .manufacturer(device.getManufacturer())
+                                .supplies(supplies)
+                                .build()));
     }
 
     public Mono<String> update(Integer userId, String deviceId, DeviceUpdateParam param) {
