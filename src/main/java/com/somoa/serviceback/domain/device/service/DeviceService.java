@@ -1,5 +1,12 @@
 package com.somoa.serviceback.domain.device.service;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
+
 import com.somoa.serviceback.domain.device.dto.DeviceRegisterParam;
 import com.somoa.serviceback.domain.device.dto.DeviceExternalApiResponse;
 import com.somoa.serviceback.domain.device.dto.DeviceResponse;
@@ -8,6 +15,7 @@ import com.somoa.serviceback.domain.device.entity.Device;
 import com.somoa.serviceback.domain.device.entity.DeviceType;
 import com.somoa.serviceback.domain.device.exception.DeviceNotFoundException;
 import com.somoa.serviceback.domain.device.repository.DeviceRepository;
+
 import com.somoa.serviceback.domain.groupuser.entity.GroupUserRole;
 import com.somoa.serviceback.domain.groupuser.repository.GroupUserRepository;
 import lombok.RequiredArgsConstructor;

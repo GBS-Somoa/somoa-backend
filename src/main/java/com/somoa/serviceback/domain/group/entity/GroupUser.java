@@ -1,6 +1,5 @@
-package com.somoa.serviceback.domain.groupuser.entity;
+package com.somoa.serviceback.domain.group.entity;
 
-import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
