@@ -1,4 +1,4 @@
-package com.somoa.serviceback.domain.supply.controller;
+package com.somoa.serviceback.domain.supplies.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
