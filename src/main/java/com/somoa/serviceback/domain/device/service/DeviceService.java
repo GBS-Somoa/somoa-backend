@@ -160,7 +160,8 @@ public class DeviceService {
                                     int newAmount = supplies.getAmount() - (Integer) value;
                                     supplies.setAmount(newAmount);
 
-                                    /** amount가 limit 아래로 내려가면 알람 처리 로직  구현할것.
+                                    /**
+                                     * Todo:amount가 limit 아래로 내려가면 알람 처리 로직  구현할것.
                                     if (supplies.getAmount() < supplies.getLimit()) {
                                         // 알람 로직
                                     }
