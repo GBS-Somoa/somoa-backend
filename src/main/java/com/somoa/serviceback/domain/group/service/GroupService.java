@@ -63,16 +63,11 @@ public class GroupService {
     }
 
     public Mono<GroupDetailResponse> findOne(Integer userId, Integer groupId) {
-        return groupUserRepository.existsGroupUser(groupId, userId)
-            .flatMap(userExists -> {
-                if (userExists) {
-                    return groupRepository.findById(groupId)
-                        .flatMap(group -> groupUserRepository.findGroupUser(groupId, userId)
-                            .map(groupUser -> GroupDetailResponse.of(group, groupUser)));
-                } else {
-                    return Mono.error(new GroupException(GroupErrorCode.INVALID_GROUP_OR_USER));
-                }
-            });
+        return groupRepository.findById(groupId)
+            .flatMap(group -> groupUserRepository.findGroupUser(group.getId(), userId)
+                .map(groupUser -> GroupDetailResponse.of(group, groupUser))
+                .switchIfEmpty(Mono.defer(() -> Mono.error(new GroupException(GroupErrorCode.USER_NOT_IN_GROUP)))))
+            .switchIfEmpty(Mono.defer(() -> Mono.error(new GroupException(GroupErrorCode.GROUP_NOT_FOUND))));
     }
 
     @Transactional
