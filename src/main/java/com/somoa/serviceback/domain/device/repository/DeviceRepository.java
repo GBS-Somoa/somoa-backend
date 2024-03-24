@@ -7,7 +7,10 @@ import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 
 import com.somoa.serviceback.domain.device.entity.Device;
 
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.Optional;
 
 public interface DeviceRepository extends ReactiveCrudRepository<Device, String> {
 
@@ -23,4 +26,6 @@ public interface DeviceRepository extends ReactiveCrudRepository<Device, String>
             + "     ON g.group_id = d.group_id "
             + "	 WHERE d.device_id = :deviceId")
     Mono<Group> findGroupByDeviceId(String deviceId);
+
+    Flux<Device> findAllByGroupId(Integer groupId);
 }
