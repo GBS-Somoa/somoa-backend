@@ -30,9 +30,7 @@ import java.util.Map;
 public class DeviceService {
 
     private final DeviceSuppliesRepository deviceSuppliesRepository;
-
     private final SuppliesRepository suppliesRepository;
-
     private final DeviceRepository deviceRepository;
     private final GroupUserRepository groupUserRepository;
 
