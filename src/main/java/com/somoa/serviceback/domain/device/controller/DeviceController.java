@@ -41,14 +41,14 @@ public class DeviceController {
     @PatchMapping("/{deviceId}")
     public Mono<ResponseEntity<ResponseHandler>> update(@PathVariable String deviceId, @RequestBody DeviceUpdateParam param) {
         return deviceService.update(userId, deviceId, param)
-                .flatMap(ResponseHandler::noContent)
+                .flatMap(ResponseHandler::ok)
                 .onErrorResume(this::handleError);
     }
 
     @DeleteMapping("/{deviceId}")
     public Mono<ResponseEntity<ResponseHandler>> delete(@PathVariable String deviceId) {
         return deviceService.delete(userId, deviceId)
-                .flatMap(ResponseHandler::noContent)
+                .flatMap(ResponseHandler::ok)
                 .onErrorResume(this::handleError);
     }
 

@@ -43,7 +43,7 @@ public class ResponseHandler<T>{
         return Mono.just(ResponseEntity.status(200).body(response));
     }
 
-    public static Mono<ResponseEntity<ResponseHandler>> noContent(String message) {
+    public static Mono<ResponseEntity<ResponseHandler>> ok(String message) {
         ResponseHandler response = new ResponseHandler(null, message, 200);
         return Mono.just(ResponseEntity.status(200).body(response));
     }
