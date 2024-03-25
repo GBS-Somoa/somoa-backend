@@ -1,24 +1,15 @@
 package com.somoa.serviceback.domain.group.controller;
 
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.somoa.serviceback.domain.group.dto.GroupModifyParam;
 import com.somoa.serviceback.domain.group.dto.GroupRegisterParam;
 import com.somoa.serviceback.domain.group.dto.GroupUserRegisterParam;
 import com.somoa.serviceback.domain.group.dto.GroupUserRoleParam;
 import com.somoa.serviceback.domain.group.service.GroupService;
 import com.somoa.serviceback.global.handler.ResponseHandler;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -53,19 +44,19 @@ public class GroupController {
     public Mono<ResponseEntity<ResponseHandler>> modify(@PathVariable("groupId") Integer groupId,
         @RequestBody GroupModifyParam param) {
         return groupService.modify(loginUserId, groupId, param)
-            .flatMap(data -> ResponseHandler.ok(data, "그룹 정보를 수정했습니다."));
+            .flatMap(data -> ResponseHandler.ok("그룹 정보를 수정했습니다."));
     }
 
     @DeleteMapping("/{groupId}")
     public Mono<ResponseEntity<ResponseHandler>> delete(@PathVariable("groupId") Integer groupId) {
         return groupService.delete(loginUserId, groupId)
-            .flatMap(data -> ResponseHandler.ok(data, "그룹을 삭제했습니다."));
+            .flatMap(data -> ResponseHandler.ok("그룹을 삭제했습니다."));
     }
 
     @DeleteMapping("/{groupId}/leave")
     public Mono<ResponseEntity<ResponseHandler>> leave(@PathVariable("groupId") Integer groupId) {
         return groupService.leave(loginUserId, groupId)
-            .flatMap(data -> ResponseHandler.ok(data, "그룹에서 나갔습니다."));
+            .flatMap(data -> ResponseHandler.ok("그룹에서 나갔습니다."));
     }
 
     @GetMapping("/{groupId}/users")
@@ -78,7 +69,7 @@ public class GroupController {
     public Mono<ResponseEntity<ResponseHandler>> addGroupMember(@PathVariable("groupId") Integer groupId,
         @RequestBody GroupUserRegisterParam param) {
         return groupService.addMember(groupId, param)
-            .flatMap(data -> ResponseHandler.ok(data, "멤버를 추가했습니다."));
+            .flatMap(data -> ResponseHandler.ok("멤버를 추가했습니다."));
     }
 
     @PatchMapping("/{groupId}/users/{userId}/permission")
@@ -86,6 +77,6 @@ public class GroupController {
                                                                              @PathVariable("userId") Integer userId,
                                                                              @RequestBody GroupUserRoleParam param) {
         return groupService.modifyMemberPermission(loginUserId, groupId, userId, param.getRole())
-            .flatMap(data -> ResponseHandler.ok(data, "멤버 권한을 수정했습니다."));
+            .flatMap(data -> ResponseHandler.ok("멤버 권한을 수정했습니다."));
     }
 }

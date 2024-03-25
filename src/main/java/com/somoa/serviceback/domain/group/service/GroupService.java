@@ -52,7 +52,6 @@ public class GroupService {
                 .map(groupUser -> {
                     Map<String, Object> data = new HashMap<>();
                     data.put("groupId", groupUser.getGroupId());
-                    data.put("groupUserId", groupUser.getId());
                     return data;
                 });
     }
@@ -71,7 +70,7 @@ public class GroupService {
     }
 
     @Transactional
-    public Mono<Map<String, Object>> modify(Integer userId, Integer groupId, GroupModifyParam param) {
+    public Mono<Integer> modify(Integer userId, Integer groupId, GroupModifyParam param) {
         return groupRepository.findById(groupId)
             .flatMap(group -> {
                 return groupUserRepository.findGroupManager(group.getId())
@@ -81,12 +80,7 @@ public class GroupService {
                         } else {
                             group.setName(param.getGroupName());
                             return groupRepository.save(group)
-                                .map(modifiedGroup -> {
-                                    Map<String, Object> data = new HashMap<>();
-                                    data.put("groupId", group.getId());
-                                    data.put("groupName", group.getName());
-                                    return data;
-                                });
+                                .then(Mono.just(group.getId()));
                         }
                     });
             })
@@ -162,7 +156,7 @@ public class GroupService {
     }
 
     @Transactional
-    public Mono<Map<String, Object>> modifyMemberPermission(Integer userId, Integer groupId, Integer targetUserId, String role) {
+    public Mono<Integer> modifyMemberPermission(Integer userId, Integer groupId, Integer targetUserId, String role) {
         if (!GroupUserRole.isValidRole(role))
             return Mono.error(new GroupException(GroupErrorCode.INVALID_GROUP_USER_ROLE));
         
@@ -177,13 +171,7 @@ public class GroupService {
                         .flatMap(targetUser -> {
                             targetUser.setRole(role);
                             return groupUserRepository.save(targetUser)
-                                .map(updatedUser -> {
-                                    Map<String, Object> data = new HashMap<>();
-                                    data.put("groupId", updatedUser.getGroupId());
-                                    data.put("userId", updatedUser.getUserId());
-                                    data.put("role", updatedUser.getRole());
-                                    return data;
-                                });
+                                .then(Mono.just(targetUser.getId()));
                         })
                         .switchIfEmpty(Mono.defer(() -> Mono.error(new GroupException(GroupErrorCode.USER_NOT_IN_GROUP))));
                 }))
