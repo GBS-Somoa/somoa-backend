@@ -43,7 +43,7 @@ public class DeviceService {
     private final String DEVICE_ID_QUERY_PARAM = "device_id";
 
     @Transactional
-    public Mono<Object> save(DeviceRegisterParam param) {
+    public Mono<Map<String, Object>> save(DeviceRegisterParam param) {
         // device_id : param.getCode();
         // API 호출의 응답으로 변경될 예정(현재는 dummy data)
         final String model = "모델 이름";
@@ -65,19 +65,18 @@ public class DeviceService {
         return deviceRepository.findById(param.getCode())
                 .flatMap(existingDevice -> Mono.error(new IllegalArgumentException("이미 등록된 기기입니다.")))
                 .switchIfEmpty(responseMono.flatMap(response ->
-                                deviceRepository.saveForce(Device.builder()
-                                        .id(param.getCode())
-                                        .groupId(param.getGroupId())
-                                        .nickname(param.getNickname())
-                                        .model(response.getModel())
-                                        .type(response.getType())
-                                        .manufacturer(response.getManufacturer())
-                                        .build()
-                                )).then(Flux.fromIterable(param.getSupplies())
-                                .flatMap(supply -> saveSupply(param.getCode(), param.getGroupId(), supply))
-                                .then(Mono.just(data))
-                        )
-                );
+                        deviceRepository.saveForce(Device.builder()
+                                .id(param.getCode())
+                                .groupId(param.getGroupId())
+                                .nickname(param.getNickname())
+                                .model(response.getModel())
+                                .type(response.getType())
+                                .manufacturer(response.getManufacturer())
+                                .build())
+                ))
+                .thenMany(Flux.fromIterable(param.getSupplies()))
+                .flatMap(supply -> saveSupply(param.getCode(), param.getGroupId(), supply))
+                .then(Mono.just(data));
     }
 
     private Mono<Supply> saveSupply(String deviceId, Integer groupId, SupplyRegisterParam param) {
@@ -160,7 +159,7 @@ public class DeviceService {
                                     if (!groupUser.getRole().equals(GroupUserRole.USER_ONLY_SUPPLY_MANAGE)) {
                                         device.setNickname(param.getDeviceName());
                                         return deviceRepository.save(device)
-                                                .then(Mono.just("기기 이름이 성공적으로 수정되었습니다."));
+                                                .then(Mono.just(deviceId));
                                     } else {
                                         return Mono.error(new IllegalArgumentException("사용자에게 권한이 없습니다."));
                                     }
@@ -177,7 +176,7 @@ public class DeviceService {
                                     if (!groupUser.getRole().equals(GroupUserRole.USER_ONLY_SUPPLY_MANAGE)) {
                                         return deleteDeviceSupply(device.getId())
                                                 .then(deviceRepository.delete(device)
-                                                        .then(Mono.just("기기가 성공적으로 삭제되었습니다.")));
+                                                        .then(Mono.just(deviceId)));
 
                                     } else {
                                         return Mono.error(new IllegalArgumentException("사용자에게 권한이 없습니다."));
