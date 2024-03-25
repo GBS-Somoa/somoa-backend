@@ -14,11 +14,18 @@ import com.somoa.serviceback.domain.supplies.entity.Supplies;
 import com.somoa.serviceback.domain.supplies.repository.SuppliesRepository;
 import com.somoa.serviceback.domain.group.entity.GroupUserRole;
 import com.somoa.serviceback.domain.group.repository.GroupUserRepository;
+import com.somoa.serviceback.domain.supply.dto.SupplyRegisterParam;
+import com.somoa.serviceback.domain.supply.dto.SupplyResponse;
+import com.somoa.serviceback.domain.supply.entity.*;
+import com.somoa.serviceback.domain.supply.repository.DeviceSupplyRepository;
+import com.somoa.serviceback.domain.supply.repository.GroupSupplyRepository;
+import com.somoa.serviceback.domain.supply.repository.SupplyRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
@@ -33,6 +40,9 @@ public class DeviceService {
     private final SuppliesRepository suppliesRepository;
     private final DeviceRepository deviceRepository;
     private final GroupUserRepository groupUserRepository;
+    private final SupplyRepository supplyRepository;
+    private final DeviceSupplyRepository deviceSupplyRepository;
+    private final GroupSupplyRepository groupSupplyRepository;
 
     private final String MANUFACTURER_SERVER_URL = "http://localhost:9090";
     private final String DEVICE_API_PATH = "/api/device";
@@ -40,7 +50,6 @@ public class DeviceService {
 
     @Transactional
     public Mono<Object> save(DeviceRegisterParam param) {
-        // TODO: 제조사 서버 API 호출 : /api/device?device_id={device_id}
         // device_id : param.getCode();
         // API 호출의 응답으로 변경될 예정(현재는 dummy data)
         final String model = "모델 이름";
@@ -59,24 +68,65 @@ public class DeviceService {
         Map<String, Object> data = new HashMap<>();
         data.put("deviceId", param.getCode());
 
-        return responseMono.flatMap(response -> deviceRepository.findById(param.getCode()))
+        return deviceRepository.findById(param.getCode())
                 .flatMap(existingDevice -> Mono.error(new IllegalArgumentException("이미 등록된 기기입니다.")))
-                .switchIfEmpty(responseMono.flatMap(response -> {
-                            Device device = Device.builder()
-                                    .id(param.getCode())
-                                    .groupId(param.getGroupId())
-                                    .nickname(param.getNickname())
-                                    .model(response.getModel())
-                                    .type(response.getType())
-                                    .manufacturer(response.getManufacturer())
-                                    .build();
-                            return deviceRepository.saveForce(device)
-                                .then(Mono.just(data));
-                        }
-                ));
+                .switchIfEmpty(responseMono.flatMap(response ->
+                                deviceRepository.saveForce(Device.builder()
+                                        .id(param.getCode())
+                                        .groupId(param.getGroupId())
+                                        .nickname(param.getNickname())
+                                        .model(response.getModel())
+                                        .type(response.getType())
+                                        .manufacturer(response.getManufacturer())
+                                        .build()
+                                )).then(Flux.fromIterable(param.getSupplies())
+                                .flatMap(supply -> saveSupply(param.getCode(), param.getGroupId(), supply))
+                                .then(Mono.just(data))
+                        )
+                );
     }
 
-    public Mono<DeviceExternalApiResponse> getDeviceResponse(String deviceId) {
+    private Mono<Supply> saveSupply(String deviceId, Integer groupId, SupplyRegisterParam param) {
+        Supply newSupply = Supply.builder()
+                .type(param.getType())
+                .name(param.getName())
+                .details(param.getDetails())
+                .build();
+
+        // 액체류 소모품이 아닐 때 (그룹으로 관리되지 않음)
+        if (!SupplyType.isLiquidType(newSupply.getType())) {
+            return supplyRepository.save(newSupply)
+                    .flatMap(savedSupply -> deviceSupplyRepository.save(DeviceSupply.builder()
+                                    .deviceId(deviceId)
+                                    .supplyId(savedSupply.getId())
+                                    .build())
+                            .then(Mono.just(savedSupply)));
+        }
+
+        // 액체류 소모품일 때 (그룹으로 관리됨)
+        // 이미 저장되어 있는 경우, group_supply는 새로 저장되지 않음
+        return getSupplyByGroupIdAndType(groupId, param.getType())
+                .switchIfEmpty(supplyRepository.save(newSupply)
+                        .flatMap(savedSupply -> groupSupplyRepository.save(GroupSupply.builder()
+                                .groupId(groupId)
+                                .supplyId(savedSupply.getId())
+                                .build()).thenReturn(savedSupply)))
+                .flatMap(savedSupply -> deviceSupplyRepository.save(DeviceSupply.builder()
+                        .deviceId(deviceId)
+                        .supplyId(savedSupply.getId())
+                        .build()).thenReturn(savedSupply));
+    }
+
+    private Mono<Supply> getSupplyByGroupIdAndType(Integer groupId, String type) {
+        return groupSupplyRepository.findSupplyIdsByGroupId(groupId)
+                .collectList()
+                .flatMapMany(Flux::fromIterable)
+                .flatMap(supplyRepository::findById)
+                .filter(supply -> supply.getType().equals(type))
+                .next();
+    }
+
+    private Mono<DeviceExternalApiResponse> getDeviceResponse(String deviceId) {
         WebClient webClient = WebClient.create(MANUFACTURER_SERVER_URL);
 
         return webClient.get()
@@ -90,7 +140,20 @@ public class DeviceService {
     public Mono<DeviceResponse> findById(String deviceId) {
         return deviceRepository.findById(deviceId)
                 .switchIfEmpty(Mono.error(new DeviceNotFoundException("기기를 찾을 수 없습니다 : " + deviceId)))
-                .map(DeviceResponse::of);
+                .flatMap(device -> deviceSupplyRepository.findSupplyIdsByDeviceId(deviceId)
+                        .collectList()
+                        .flatMapMany(Flux::fromIterable)
+                        .flatMap(supplyRepository::findById)
+                        .map(SupplyResponse::of)
+                        .collectList()
+                        .map(supplies -> DeviceResponse.builder()
+                                .id(device.getId())
+                                .nickname(device.getNickname())
+                                .model(device.getModel())
+                                .type(device.getType())
+                                .manufacturer(device.getManufacturer())
+                                .supplies(supplies)
+                                .build()));
     }
 
     public Mono<String> update(Integer userId, String deviceId, DeviceUpdateParam param) {
