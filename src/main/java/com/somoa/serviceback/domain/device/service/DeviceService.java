@@ -10,14 +10,9 @@ import com.somoa.serviceback.domain.device.exception.DeviceNotFoundException;
 import com.somoa.serviceback.domain.device.repository.DeviceRepository;
 import com.somoa.serviceback.domain.group.entity.GroupUserRole;
 import com.somoa.serviceback.domain.group.repository.GroupUserRepository;
-import com.somoa.serviceback.domain.groupuser.entity.GroupUserRole;
-import com.somoa.serviceback.domain.groupuser.repository.GroupUserRepository;
 import com.somoa.serviceback.domain.supply.dto.SupplyRegisterParam;
 import com.somoa.serviceback.domain.supply.dto.SupplyResponse;
-import com.somoa.serviceback.domain.supply.entity.DeviceSupply;
-import com.somoa.serviceback.domain.supply.entity.GroupSupply;
-import com.somoa.serviceback.domain.supply.entity.Supply;
-import com.somoa.serviceback.domain.supply.entity.SupplyType;
+import com.somoa.serviceback.domain.supply.entity.*;
 import com.somoa.serviceback.domain.supply.repository.DeviceSupplyRepository;
 import com.somoa.serviceback.domain.supply.repository.GroupSupplyRepository;
 import com.somoa.serviceback.domain.supply.repository.SupplyRepository;
@@ -49,7 +44,6 @@ public class DeviceService {
 
     @Transactional
     public Mono<Object> save(DeviceRegisterParam param) {
-        // TODO: 제조사 서버 API 호출 : /api/device?device_id={device_id}
         // device_id : param.getCode();
         // API 호출의 응답으로 변경될 예정(현재는 dummy data)
         final String model = "모델 이름";
@@ -93,21 +87,18 @@ public class DeviceService {
                 .details(param.getDetails())
                 .build();
 
-        if (!newSupply.getType().equals(SupplyType.DETERGENT)) {
+        // 액체류 소모품이 아닐 때 (그룹으로 관리되지 않음)
+        if (!SupplyType.isLiquidType(newSupply.getType())) {
             return supplyRepository.save(newSupply)
                     .flatMap(savedSupply -> deviceSupplyRepository.save(DeviceSupply.builder()
                                     .deviceId(deviceId)
                                     .supplyId(savedSupply.getId())
                                     .build())
-                            .then(Mono.just(savedSupply)))
-                    .flatMap(savedSupply ->
-                            groupSupplyRepository.save(GroupSupply.builder()
-                                    .groupId(groupId)
-                                    .supplyId(savedSupply.getId())
-                                    .build()).thenReturn(savedSupply)
-                            );
+                            .then(Mono.just(savedSupply)));
         }
 
+        // 액체류 소모품일 때 (그룹으로 관리됨)
+        // 이미 저장되어 있는 경우, group_supply는 새로 저장되지 않음
         return getSupplyByGroupIdAndType(groupId, param.getType())
                 .switchIfEmpty(Mono.defer(() -> supplyRepository.save(newSupply)
                         .flatMap(savedSupply -> groupSupplyRepository.save(GroupSupply.builder()
@@ -122,11 +113,11 @@ public class DeviceService {
 
     public Mono<Supply> getSupplyByGroupIdAndType(Integer groupId, String type) {
         return groupSupplyRepository.findSupplyIdsByGroupId(groupId)
-            .collectList()
-            .flatMapMany(Flux::fromIterable)
-            .flatMap(supplyRepository::findById)
-            .filter(supply -> supply.getType().equals(type))
-            .next();
+                .collectList()
+                .flatMapMany(Flux::fromIterable)
+                .flatMap(supplyRepository::findById)
+                .filter(supply -> supply.getType().equals(type))
+                .next();
     }
 
     public Mono<DeviceExternalApiResponse> getDeviceResponse(String deviceId) {

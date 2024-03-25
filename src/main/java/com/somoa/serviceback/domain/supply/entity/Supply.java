@@ -20,13 +20,13 @@ public class Supply {
     @MongoId
     private String id;
 
-    @Field("supply_type")
+    @Field("supplyType")
     private String type;
 
-    @Field("supply_name")
+    @Field("supplyName")
     private String name;
 
-    @Field("details")
+    @Field("supplyDetails")
     private Map<String, Object> details = new HashMap<>();
 
     @Builder
