@@ -100,18 +100,18 @@ public class DeviceService {
         // 액체류 소모품일 때 (그룹으로 관리됨)
         // 이미 저장되어 있는 경우, group_supply는 새로 저장되지 않음
         return getSupplyByGroupIdAndType(groupId, param.getType())
-                .switchIfEmpty(Mono.defer(() -> supplyRepository.save(newSupply)
+                .switchIfEmpty(supplyRepository.save(newSupply)
                         .flatMap(savedSupply -> groupSupplyRepository.save(GroupSupply.builder()
                                 .groupId(groupId)
                                 .supplyId(savedSupply.getId())
-                                .build()).thenReturn(savedSupply))))
+                                .build()).thenReturn(savedSupply)))
                 .flatMap(savedSupply -> deviceSupplyRepository.save(DeviceSupply.builder()
                         .deviceId(deviceId)
                         .supplyId(savedSupply.getId())
                         .build()).thenReturn(savedSupply));
     }
 
-    public Mono<Supply> getSupplyByGroupIdAndType(Integer groupId, String type) {
+    private Mono<Supply> getSupplyByGroupIdAndType(Integer groupId, String type) {
         return groupSupplyRepository.findSupplyIdsByGroupId(groupId)
                 .collectList()
                 .flatMapMany(Flux::fromIterable)
@@ -120,7 +120,7 @@ public class DeviceService {
                 .next();
     }
 
-    public Mono<DeviceExternalApiResponse> getDeviceResponse(String deviceId) {
+    private Mono<DeviceExternalApiResponse> getDeviceResponse(String deviceId) {
         WebClient webClient = WebClient.create(MANUFACTURER_SERVER_URL);
 
         return webClient.get()
