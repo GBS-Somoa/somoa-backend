@@ -58,45 +58,51 @@ public class GroupManagementService {
     }
 
     public Mono<GroupDetailResponse> findOne(Integer userId, Integer groupId) {
-        return groupRepository.findById(groupId)
-            .flatMap(group -> groupUserRepository.findGroupUser(group.getId(), userId)
-                .map(groupUser -> GroupDetailResponse.of(group, groupUser))
-                .switchIfEmpty(Mono.defer(() -> Mono.error(new GroupException(GroupErrorCode.USER_NOT_IN_GROUP)))))
-            .switchIfEmpty(Mono.defer(() -> Mono.error(new GroupException(GroupErrorCode.GROUP_NOT_FOUND))));
+        return findGroup(groupId)
+            .flatMap(group -> findGroupUser(groupId, userId)
+                .map(groupUser -> GroupDetailResponse.of(group, groupUser)));
     }
 
     @Transactional
-    public Mono<Integer> modify(Integer userId, Integer groupId, GroupModifyParam param) {
-        return groupRepository.findById(groupId)
-            .flatMap(group -> {
-                return groupUserRepository.findGroupManager(group.getId())
-                    .flatMap(groupManager -> {
-                        if (!groupManager.getId().equals(userId)) {
-                            return Mono.error(new GroupException(GroupErrorCode.NO_GROUP_MANAGEMENT_PERMISSION));
-                        } else {
-                            group.setName(param.getGroupName());
-                            return groupRepository.save(group)
-                                .then(Mono.just(group.getId()));
-                        }
-                    });
-            })
-            .switchIfEmpty(Mono.defer(() -> Mono.error(new GroupException(GroupErrorCode.GROUP_NOT_FOUND))));
+    public Mono<Void> modify(Integer userId, Integer groupId, GroupModifyParam param) {
+        return hasGroupManagementPermission(groupId, userId)
+            .flatMap(hasPermission -> {
+                if (!hasPermission) {
+                    return Mono.error(new GroupException(GroupErrorCode.NO_GROUP_MANAGEMENT_PERMISSION));
+                }
+                return findGroup(groupId)
+                    .flatMap(group -> {
+                        group.setName(param.getGroupName());
+                        return groupRepository.save(group);
+                    }).then();
+            });
     }
 
     @Transactional
-    public Mono<Integer> delete(Integer userId, Integer groupId) {
+    public Mono<Void> delete(Integer userId, Integer groupId) {
+        return hasGroupManagementPermission(groupId, userId)
+            .flatMap(hasPermission -> {
+                if (!hasPermission) {
+                    return Mono.error(new GroupException(GroupErrorCode.NO_GROUP_MANAGEMENT_PERMISSION));
+                }
+                return findGroup(groupId)
+                    .flatMap(groupRepository::delete);
+            });
+    }
+
+    private Mono<Group> findGroup(Integer groupId) {
         return groupRepository.findById(groupId)
-            .flatMap(group -> {
-                return groupUserRepository.findGroupManager(group.getId())
-                    .flatMap(groupManager -> {
-                        if (!groupManager.getId().equals(userId)) {
-                            return Mono.error(new GroupException(GroupErrorCode.NO_GROUP_MANAGEMENT_PERMISSION));
-                        } else {
-                            return groupRepository.delete(group)
-                                .then(Mono.just(group.getId()));
-                        }
-                    });
-            })
-            .switchIfEmpty(Mono.defer(() -> Mono.error(new GroupException(GroupErrorCode.GROUP_NOT_FOUND))));
+            .switchIfEmpty(Mono.error(new GroupException(GroupErrorCode.GROUP_NOT_FOUND)));
+    }
+
+    private Mono<GroupUser> findGroupUser(Integer groupId, Integer userId) {
+        return groupUserRepository.findGroupUser(groupId, userId)
+            .switchIfEmpty(Mono.error(new GroupException(GroupErrorCode.USER_NOT_IN_GROUP)));
+    }
+
+    private Mono<Boolean> hasGroupManagementPermission(Integer groupId, Integer userId) {
+        return groupUserRepository.findGroupManager(groupId)
+            .map(groupManager -> groupManager.getUserId().equals(userId))
+            .defaultIfEmpty(false);
     }
 }

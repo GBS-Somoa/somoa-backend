@@ -58,13 +58,13 @@ public class GroupController {
     public Mono<ResponseEntity<ResponseHandler>> modify(@PathVariable("groupId") Integer groupId,
         @RequestBody GroupModifyParam param) {
         return groupManagementService.modify(loginUserId, groupId, param)
-            .flatMap(data -> ResponseHandler.ok("그룹 정보를 수정했습니다."));
+            .then(ResponseHandler.ok("그룹 정보를 수정했습니다."));
     }
 
     @DeleteMapping("/{groupId}")
     public Mono<ResponseEntity<ResponseHandler>> delete(@PathVariable("groupId") Integer groupId) {
         return groupManagementService.delete(loginUserId, groupId)
-            .flatMap(data -> ResponseHandler.ok("그룹을 삭제했습니다."));
+            .then(ResponseHandler.ok("그룹을 삭제했습니다."));
     }
 
     @DeleteMapping("/{groupId}/leave")
