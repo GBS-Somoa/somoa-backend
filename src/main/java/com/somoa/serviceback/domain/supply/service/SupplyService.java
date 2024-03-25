@@ -67,19 +67,16 @@ public class SupplyService {
                 });
     }
 
-    /**
-     * Todo: tmp용량 어떻게 처리되는지 확인
-     * @param supplyId
-     * @param supplyAmount
-     * @return
-     */
     public Mono<Boolean> updateSupply(String supplyId, Integer supplyAmount) {
         return supplyRepository.findById(supplyId)
                 .flatMap(supply -> {
-                    supply.setAmountTmp(supply.getAmountTmp()+supplyAmount);
-                    return supplyRepository.save(supply);
+                    if (supply.getDetails().containsKey("supplyAmount")) {
+                        supply.getDetails().put("supplyAmount", supplyAmount);
+                        return supplyRepository.save(supply).map(savedSupply -> true);
+                    } else {
+                        return Mono.error(new RuntimeException("소모용량이 없는 소모품입니다."));
+                    }
                 })
-                .map(supply -> true) // 성공적으로 저장되면 true 반환
-                .defaultIfEmpty(false); // findById 결과가 없으면 false 반환
+                .defaultIfEmpty(false);
     }
 }

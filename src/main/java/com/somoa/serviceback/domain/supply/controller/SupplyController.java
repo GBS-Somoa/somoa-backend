@@ -1,6 +1,7 @@
 package com.somoa.serviceback.domain.supply.controller;
 
 import com.somoa.serviceback.domain.device.exception.DeviceNotFoundException;
+import com.somoa.serviceback.domain.supply.dto.SupplyAmountParam;
 import com.somoa.serviceback.domain.supply.service.SupplyService;
 import com.somoa.serviceback.global.handler.ResponseHandler;
 import lombok.RequiredArgsConstructor;
@@ -30,15 +31,10 @@ public class SupplyController {
                 });
     }
 
-    /**
-     * Todo: 소모품 수정시, tmp와 실제양 변경 언제이루어지는지?
-     * @param supplyId
-     * @param supplyAmount
-     * @return
-     */
+
     @PatchMapping("/{supplyId}")
-    public Mono<ResponseEntity<ResponseHandler>> updateSupply(@PathVariable String supplyId, @RequestBody Integer supplyAmount) {
-        return supplyService.updateSupply(supplyId, supplyAmount)
+    public Mono<ResponseEntity<ResponseHandler>> updateSupply(@PathVariable String supplyId, @RequestBody SupplyAmountParam supplyAmountParam) {
+        return supplyService.updateSupply(supplyId, supplyAmountParam.getSupplyAmount())
                 .flatMap(data -> ResponseHandler.ok(data, "소모품 수정에 성공하였습니다."))
                 .onErrorResume(this::handleError);
     }
