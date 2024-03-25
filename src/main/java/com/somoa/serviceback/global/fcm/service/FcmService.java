@@ -4,6 +4,8 @@ package com.somoa.serviceback.global.fcm.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.somoa.serviceback.domain.group.repository.GroupUserRepository;
+import com.somoa.serviceback.global.fcm.dto.FcmGroupMessageDto;
 import com.somoa.serviceback.global.fcm.dto.FcmMessageDto;
 import com.somoa.serviceback.global.fcm.dto.FcmSendDto;
 import com.somoa.serviceback.global.fcm.entity.FcmToken;
@@ -13,16 +15,20 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class FcmService {
     private final FcmRepository fcmRepository;
-
+    private final GroupUserRepository groupUserRepository;
+    private final WebClient webClient = WebClient.builder().build();
     public Mono<FcmToken> saveOrUpdateFcmToken(int userId, String mobileDeviceId, String fcmToken) {
         return fcmRepository.findByUserIdAndMobileDeviceId(userId, mobileDeviceId)
                 .flatMap(existingToken -> {
@@ -39,23 +45,18 @@ public class FcmService {
                 }));
     }
 
-    public int sendMessageTo(FcmSendDto fcmSendDto) throws IOException {
-
-        String message = makeMessage(fcmSendDto);
-        RestTemplate restTemplate = new RestTemplate();
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", "Bearer " + getAccessToken());
-
-        HttpEntity entity = new HttpEntity<>(message, headers);
-
-        String API_URL = "https://fcm.googleapis.com/v1/projects/somoa-8dea6/messages:send";
-        ResponseEntity response = restTemplate.exchange(API_URL, HttpMethod.POST, entity, String.class);
-
-        System.out.println(response.getStatusCode());
-
-        return response.getStatusCode() == HttpStatus.OK ? 1 : 0;
+    public Mono<Integer> sendMessageTo(FcmSendDto fcmSendDto) {
+        return Mono.fromCallable(this::getAccessToken)
+                .flatMap(token -> webClient.post()
+                        .uri("https://fcm.googleapis.com/v1/projects/somoa-8dea6/messages:send")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(createMessage(fcmSendDto))
+                        .retrieve()
+                        .bodyToMono(String.class)
+                        .doOnError(error -> System.out.println(error))
+                        .map(response -> 1)
+                        .onErrorReturn(0));
     }
 
 
@@ -70,19 +71,78 @@ public class FcmService {
         return googleCredentials.getAccessToken().getTokenValue();
     }
 
-    private String makeMessage(FcmSendDto fcmSendDto) throws JsonProcessingException {
-
-        ObjectMapper om = new ObjectMapper();
+    private String createMessage(FcmSendDto fcmSendDto) {
+        ObjectMapper objectMapper = new ObjectMapper();
         FcmMessageDto fcmMessageDto = FcmMessageDto.builder()
                 .message(FcmMessageDto.Message.builder()
                         .token(fcmSendDto.getToken())
                         .notification(FcmMessageDto.Notification.builder()
                                 .title(fcmSendDto.getTitle())
                                 .body(fcmSendDto.getBody())
-                                .image(null)
-                                .build()
-                        ).build()).validateOnly(false).build();
+                                .build())
+                        .build())
+                .validateOnly(false)
+                .build();
+        try {
+            return objectMapper.writeValueAsString(fcmMessageDto);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Creating FCM message failed", e);
+        }
+    }
 
-        return om.writeValueAsString(fcmMessageDto);
+    public Mono<Integer> sendMessageToGroup(int groupId, String title, String body) {
+
+        return Mono.fromCallable(this::getAccessToken)
+                .flatMap(accessToken ->
+                        // groupId에 해당하는 모든 userId를 조회하여 Stream으로 변환
+                        groupUserRepository.findUserIdsByGroupId(groupId).collectList()
+                                .flatMap(userIds -> {
+                                    // 모든 userId에 대한 FcmToken을 조회
+                                    return Flux.fromIterable(userIds)
+                                            .flatMap(userId -> fcmRepository.findByUserId(userId))
+                                            .collectList()
+                                            .flatMap(fcmTokens -> {
+                                                // FcmToken에서 token만 추출
+                                                List<String> tokens = fcmTokens.stream().map(FcmToken::getToken).collect(Collectors.toList());
+                                                // 모든 토큰에 대해 메시지 전송
+                                                return sendGroupMessage(tokens, title, body, accessToken);
+                                            });
+                                })
+                ).onErrorReturn(0);
+    }
+
+    private Mono<Integer> sendGroupMessage(List<String> tokens, String title, String body, String accessToken) {
+        // 메시지 구성
+        String messagePayload = createMessagePayload(tokens, title, body);
+        // FCM에 메시지 전송
+        return webClient.post()
+                .uri("https://fcm.googleapis.com/v1/projects/your-project-id/messages:send")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(messagePayload)
+                .retrieve()
+                .bodyToMono(String.class)
+                .map(response -> 1) // 성공적으로 메시지를 전송했으면 1 반환
+                .onErrorReturn(0); // 오류가 발생하면 0 반환
+    }
+
+    private String createMessagePayload(List<String> tokens, String title, String body) {
+        // ObjectMapper를 사용하여 메시지를 JSON 형식으로 변환
+        ObjectMapper objectMapper = new ObjectMapper();
+        FcmGroupMessageDto message = FcmGroupMessageDto.builder()
+                .validateOnly(false)
+                .message(FcmGroupMessageDto.Message.builder()
+                        .notification(FcmGroupMessageDto.Notification.builder()
+                                .title(title)
+                                .body(body)
+                                .build())
+                        .registrationIds(tokens)
+                        .build())
+                .build();
+        try {
+            return objectMapper.writeValueAsString(message);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to convert message to JSON", e);
+        }
     }
 }

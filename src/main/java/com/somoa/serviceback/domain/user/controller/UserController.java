@@ -116,28 +116,28 @@ public class UserController {
      */
     @GetMapping("/sendNotifications")
     public Mono<ResponseEntity<String>> sendNotificationsToAllUsers() {
-        // FcmToken 컬렉션에서 모든 토큰 조회
         return fcmRepository.findAll()
                 .flatMap(fcmToken -> {
-                    // 각 토큰에 대해 메시지 전송
                     FcmSendDto fcmSendDto = new FcmSendDto(fcmToken.getToken(), "제목", "본문");
-                    try {
-                        return Mono.just(fcmService.sendMessageTo(fcmSendDto));
-                    } catch (IOException e) {
-                        return Mono.error(e);
-                    }
+                    return fcmService.sendMessageTo(fcmSendDto);
                 })
-                .collectList() // 모든 메시지 전송 작업을 리스트로 수집
-                .map(resultList -> ResponseEntity.ok().body("Messages sent successfully"))
-                .defaultIfEmpty(ResponseEntity.status(HttpStatus.NOT_FOUND).body("No tokens found"));
+                .collectList() // 모든 메시지 전송 작업 결과를 리스트로 수집
+                .flatMap(resultList -> {
+                    // 여기에서는 단순히 성공 메시지를 보내지만, 필요하다면 resultList를 검사하여 세부 처리를 할 수 있습니다.
+                    long successCount = resultList.stream().filter(result -> result == 1).count();
+                    if (successCount > 0) {
+                        return Mono.just(ResponseEntity.ok().body(successCount + " messages sent successfully"));
+                    } else {
+                        return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to send messages"));
+                    }
+                });
     }
-
 
 
     /**
      * 특정 그룹에 메세지보내는 코드 (참고용)
      *
-
+     */
     @GetMapping("/sendNotifications2")
     public Mono<ResponseEntity<String>> sendNotificationsToGroup() throws IOException {
         // FcmToken 컬렉션에서 모든 토큰 조회
@@ -150,6 +150,4 @@ public class UserController {
             return Mono.error(e);
         }
     }
-     * @return
-     */
 }
