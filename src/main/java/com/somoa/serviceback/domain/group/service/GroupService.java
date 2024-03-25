@@ -20,6 +20,8 @@ import com.somoa.serviceback.domain.group.error.GroupErrorCode;
 import com.somoa.serviceback.domain.group.exception.GroupException;
 import com.somoa.serviceback.domain.group.repository.GroupRepository;
 import com.somoa.serviceback.domain.group.repository.GroupUserRepository;
+import com.somoa.serviceback.domain.order.dto.OrderResponse;
+import com.somoa.serviceback.domain.order.repository.OrderRepository;
 import com.somoa.serviceback.domain.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -28,11 +30,13 @@ import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class GroupService {
 
     private final GroupRepository groupRepository;
     private final GroupUserRepository groupUserRepository;
     private final UserRepository userRepository;
+    private final OrderRepository orderRepository;
 
     @Transactional
     public Mono<Map<String, Object>> save(Integer userId, GroupRegisterParam param) {
@@ -176,5 +180,18 @@ public class GroupService {
                         .switchIfEmpty(Mono.defer(() -> Mono.error(new GroupException(GroupErrorCode.USER_NOT_IN_GROUP))));
                 }))
             .switchIfEmpty(Mono.defer(() -> Mono.error(new GroupException(GroupErrorCode.GROUP_NOT_FOUND))));
+    }
+
+    public Mono<List<OrderResponse>> getOrders(Integer userId, Integer groupId) {
+        return groupUserRepository.existsGroupUser(groupId, userId)
+            .flatMap(userExists -> {
+                if (userExists) {
+                    return orderRepository.findAllByGroupId(groupId)
+                        .map(OrderResponse::of)
+                        .collectList();
+                } else {
+                    return Mono.error(new GroupException(GroupErrorCode.INVALID_GROUP_OR_USER));
+                }
+            });
     }
 }
