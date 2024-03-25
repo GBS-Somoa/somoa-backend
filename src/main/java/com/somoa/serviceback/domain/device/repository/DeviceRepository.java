@@ -20,8 +20,8 @@ public interface DeviceRepository extends ReactiveCrudRepository<Device, String>
     Mono<Void> saveForce(Device device);
 
     @Query("SELECT g.* "
-            + "   FROM groups g "
-            + "	  JOIN device d "
+            + "   FROM `group` AS g "
+            + "	  JOIN device AS d "
             + "     ON g.group_id = d.group_id "
             + "	 WHERE d.device_id = :deviceId")
     Mono<Group> findGroupByDeviceId(String deviceId);
