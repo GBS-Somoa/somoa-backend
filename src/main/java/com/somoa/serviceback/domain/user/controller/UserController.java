@@ -40,16 +40,15 @@ public class UserController {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String refreshToken = authHeader.substring(7);
             return userService.refreshAccessToken(refreshToken)
-                    .flatMap(tokens -> ResponseHandler.ok(tokens,"토큰이 정상적으로 갱신되었습니다."))
+                    .flatMap(tokens -> ResponseHandler.ok(tokens, "토큰이 정상적으로 갱신되었습니다."))
                     .onErrorResume(e -> {
                         System.out.println(e);
-                        return ResponseHandler.error("유효하지 않거나 기간이 지난 토큰입니다.",HttpStatus.UNAUTHORIZED); // 401 Unauthorized
+                        return ResponseHandler.error("유효하지 않거나 기간이 지난 토큰입니다.", HttpStatus.UNAUTHORIZED); // 401 Unauthorized
                     });
         } else {
             return ResponseHandler.error("토큰이 유효하지 않습니다.", HttpStatus.BAD_REQUEST); // 400 Bad Request
         }
     }
-
 
 
     @PostMapping("/login")
@@ -107,7 +106,7 @@ public class UserController {
     @GetMapping("/check")
     public Mono<ResponseEntity<ResponseHandler>> checkAuth() {
         System.out.println("인증완료");
-            return ResponseHandler.ok("hello", "인증된 유저");
+        return ResponseHandler.ok("hello", "인증된 유저");
 
     }
 
@@ -132,4 +131,25 @@ public class UserController {
                 .map(resultList -> ResponseEntity.ok().body("Messages sent successfully"))
                 .defaultIfEmpty(ResponseEntity.status(HttpStatus.NOT_FOUND).body("No tokens found"));
     }
+
+
+
+    /**
+     * 특정 그룹에 메세지보내는 코드 (참고용)
+     *
+
+    @GetMapping("/sendNotifications2")
+    public Mono<ResponseEntity<String>> sendNotificationsToGroup() throws IOException {
+        // FcmToken 컬렉션에서 모든 토큰 조회
+        try {
+            return fcmService.sendMessageToGroup(1, "제목", "본문")
+                    .map(result -> ResponseEntity.ok().body("Messages sent successfully"))
+                    .defaultIfEmpty(ResponseEntity.status(HttpStatus.NOT_FOUND).body("No tokens found"));
+        }
+        catch(Exception e) {
+            return Mono.error(e);
+        }
+    }
+     * @return
+     */
 }

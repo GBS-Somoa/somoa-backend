@@ -28,7 +28,6 @@ public class JwtService {
 
     final private JwtParser parser;
     final private JwtParser refreshparser;
-
     public JwtService(){
         this.accessKey = Keys.hmacShaKeyFor("clzlsvlwkgoaqjrjdusdjdbrghlthrhrltkaruqtkf".getBytes());
         this.refreshKey = Keys.hmacShaKeyFor("rhemddjghldusdjghldbrghlckaclghldbrtktlal".getBytes());

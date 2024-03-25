@@ -4,18 +4,20 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.util.List;
+
 @Getter
 @Builder
-public class FcmMessageDto {
+public class FcmGroupMessageDto{
     private boolean validateOnly;
-    private FcmMessageDto.Message message;
+    private Message message;
 
     @Builder
     @AllArgsConstructor
     @Getter
     public static class Message {
-        private FcmMessageDto.Notification notification;
-        private String token;
+        private Notification notification;
+        private List<String> registrationIds; // 다중 토큰 지원을 위한 필드 추가
     }
 
     @Builder
@@ -26,5 +28,4 @@ public class FcmMessageDto {
         private String body;
         private String image;
     }
-
 }
