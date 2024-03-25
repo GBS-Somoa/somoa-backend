@@ -24,18 +24,17 @@ public class SupplyElement {
     }};
 
     public static Object getDefaultValue(String name, String type) {
-        if (name.equals(LIMIT)) {
-            if (SupplyType.isLiquidType(type)) return 100; // ml
-            if (type.equals(SupplyType.REPLACEABLE_FILTER)) return 365; // 일
-            if (type.equals(SupplyType.CLEANABLE_FILTER)) return FilterStatus.BAD;
-            if (type.equals(SupplyType.SUPPLY_TANK)) return 2;
-            if (type.equals(SupplyType.DRAIN_TANK)) return 8;
-            if (type.equals(SupplyType.DUST_BIN)) return 8;
+        switch (name) {
+            case LIMIT:
+                return SupplyType.getDefaultLimit(type);
+            case AMOUNT:
+            case AMOUNT_TMP:
+                return 0;
+            case CHANGE_DATE:
+                return LocalDateTime.now().plusHours(9);
+            case STATUS:
+                return FilterStatus.GOOD;
         }
-        if (name.equals(AMOUNT)) return 0;
-        if (name.equals(AMOUNT_TMP)) return 0;
-        if (name.equals(CHANGE_DATE)) return LocalDateTime.now().plusHours(9);
-        if (name.equals(STATUS)) return FilterStatus.GOOD;
 
         throw new IllegalArgumentException("유효하지 않은 소모품 타입입니다 : " + name);
     }

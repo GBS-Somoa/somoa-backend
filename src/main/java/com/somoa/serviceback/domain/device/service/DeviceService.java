@@ -70,7 +70,7 @@ public class DeviceService {
     private Mono<Supply> saveSupply(String deviceId, Integer groupId, SupplyRegisterParam param) {
 
         // 소모품 종류 유효성 검사
-        if (SupplyType.isValidType(param.getType())) {
+        if (!SupplyType.isValidType(param.getType())) {
             return Mono.error(new IllegalArgumentException("유효하지 않은 소모품 타입입니다 : " + param.getType()));
         }
 
