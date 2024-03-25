@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 @Data
 public class SupplyRegisterParam {
@@ -16,5 +18,5 @@ public class SupplyRegisterParam {
     private String name;
 
     @JsonProperty("dataProvided")
-    private Map<String, Object> details = new HashMap<>();
+    private Set<String> details = new HashSet<>();
 }
