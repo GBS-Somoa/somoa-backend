@@ -1,13 +1,15 @@
 package com.somoa.serviceback.domain.device.service;
 
-import com.somoa.serviceback.domain.device.dto.DeviceRegisterParam;
 import com.somoa.serviceback.domain.device.dto.DeviceExternalApiResponse;
+import com.somoa.serviceback.domain.device.dto.DeviceRegisterParam;
 import com.somoa.serviceback.domain.device.dto.DeviceResponse;
 import com.somoa.serviceback.domain.device.dto.DeviceUpdateParam;
 import com.somoa.serviceback.domain.device.entity.Device;
 import com.somoa.serviceback.domain.device.entity.DeviceType;
 import com.somoa.serviceback.domain.device.exception.DeviceNotFoundException;
 import com.somoa.serviceback.domain.device.repository.DeviceRepository;
+import com.somoa.serviceback.domain.group.entity.GroupUserRole;
+import com.somoa.serviceback.domain.group.repository.GroupUserRepository;
 import com.somoa.serviceback.domain.groupuser.entity.GroupUserRole;
 import com.somoa.serviceback.domain.groupuser.repository.GroupUserRepository;
 import com.somoa.serviceback.domain.supply.dto.SupplyRegisterParam;
