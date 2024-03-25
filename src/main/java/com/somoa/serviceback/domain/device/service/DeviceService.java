@@ -80,6 +80,9 @@ public class DeviceService {
             if (!SupplyElement.isValidElement(element)) {
                 return Mono.error(new IllegalArgumentException("유효하지 않은 소모품 요소입니다 : " + element));
             }
+            if (element.equals(SupplyElement.AMOUNT)) {
+                details.put(SupplyElement.AMOUNT_TMP, SupplyElement.getDefaultValue(SupplyElement.AMOUNT_TMP, param.getType()));
+            }
             details.put(element, SupplyElement.getDefaultValue(element, param.getType()));
         }
         // 알림 기준 초기값 설정
