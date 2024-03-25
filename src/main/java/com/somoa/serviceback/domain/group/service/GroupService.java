@@ -16,6 +16,8 @@ import com.somoa.serviceback.domain.group.dto.GroupUserResponse;
 import com.somoa.serviceback.domain.group.entity.Group;
 import com.somoa.serviceback.domain.group.entity.GroupUser;
 import com.somoa.serviceback.domain.group.entity.GroupUserRole;
+import com.somoa.serviceback.domain.group.error.GroupErrorCode;
+import com.somoa.serviceback.domain.group.exception.GroupException;
 import com.somoa.serviceback.domain.group.repository.GroupRepository;
 import com.somoa.serviceback.domain.group.repository.GroupUserRepository;
 import com.somoa.serviceback.domain.user.repository.UserRepository;
@@ -50,7 +52,6 @@ public class GroupService {
                 .map(groupUser -> {
                     Map<String, Object> data = new HashMap<>();
                     data.put("groupId", groupUser.getGroupId());
-                    data.put("groupUserId", groupUser.getId());
                     return data;
                 });
     }
@@ -61,39 +62,29 @@ public class GroupService {
     }
 
     public Mono<GroupDetailResponse> findOne(Integer userId, Integer groupId) {
-        return groupUserRepository.existsGroupUser(groupId, userId)
-            .flatMap(userExists -> {
-                if (userExists) {
-                    return groupRepository.findById(groupId)
-                        .flatMap(group -> groupUserRepository.findGroupUser(groupId, userId)
-                            .map(groupUser -> GroupDetailResponse.of(group, groupUser)));
-                } else {
-                    return Mono.error(new IllegalArgumentException("그룹 번호가 유효하지 않거나, 그룹에 속하지 않은 유저입니다."));
-                }
-            });
+        return groupRepository.findById(groupId)
+            .flatMap(group -> groupUserRepository.findGroupUser(group.getId(), userId)
+                .map(groupUser -> GroupDetailResponse.of(group, groupUser))
+                .switchIfEmpty(Mono.defer(() -> Mono.error(new GroupException(GroupErrorCode.USER_NOT_IN_GROUP)))))
+            .switchIfEmpty(Mono.defer(() -> Mono.error(new GroupException(GroupErrorCode.GROUP_NOT_FOUND))));
     }
 
     @Transactional
-    public Mono<Map<String, Object>> modify(Integer userId, Integer groupId, GroupModifyParam param) {
+    public Mono<Integer> modify(Integer userId, Integer groupId, GroupModifyParam param) {
         return groupRepository.findById(groupId)
             .flatMap(group -> {
                 return groupUserRepository.findGroupManager(group.getId())
                     .flatMap(groupManager -> {
                         if (!groupManager.getId().equals(userId)) {
-                            return Mono.error(new IllegalArgumentException("그룹 수정 권한이 없는 유저입니다."));
+                            return Mono.error(new GroupException(GroupErrorCode.NO_GROUP_MANAGEMENT_PERMISSION));
                         } else {
                             group.setName(param.getGroupName());
                             return groupRepository.save(group)
-                                .map(modifiedGroup -> {
-                                    Map<String, Object> data = new HashMap<>();
-                                    data.put("groupId", group.getId());
-                                    data.put("groupName", group.getName());
-                                    return data;
-                                });
+                                .then(Mono.just(group.getId()));
                         }
                     });
             })
-            .switchIfEmpty(Mono.defer(() -> Mono.error(new IllegalArgumentException("유효하지 않는 그룹 번호입니다."))));
+            .switchIfEmpty(Mono.defer(() -> Mono.error(new GroupException(GroupErrorCode.GROUP_NOT_FOUND))));
     }
 
     @Transactional
@@ -103,14 +94,14 @@ public class GroupService {
                 return groupUserRepository.findGroupManager(group.getId())
                     .flatMap(groupManager -> {
                         if (!groupManager.getId().equals(userId)) {
-                            return Mono.error(new IllegalArgumentException("그룹 삭제 권한이 없는 유저입니다."));
+                            return Mono.error(new GroupException(GroupErrorCode.NO_GROUP_MANAGEMENT_PERMISSION));
                         } else {
                             return groupRepository.delete(group)
                                 .then(Mono.just(group.getId()));
                         }
                     });
             })
-            .switchIfEmpty(Mono.defer(() -> Mono.error(new IllegalArgumentException("유효하지 않는 그룹 번호입니다."))));
+            .switchIfEmpty(Mono.defer(() -> Mono.error(new GroupException(GroupErrorCode.GROUP_NOT_FOUND))));
     }
 
     @Transactional
@@ -118,13 +109,13 @@ public class GroupService {
         return groupUserRepository.findGroupUser(groupId, userId)
             .flatMap(existingGroupUser -> {
                     if (existingGroupUser.getRole().equals(GroupUserRole.MANAGER)) {
-                        return Mono.error(new RuntimeException("관리자는 그룹에서 나갈 수 없습니다."));
+                        return Mono.error(new GroupException(GroupErrorCode.GROUP_MANAGER_CANNOT_LEAVE));
                     } else {
                         return groupUserRepository.delete(existingGroupUser)
                                 .then(Mono.just(existingGroupUser.getId()));
                     }
                 })
-            .switchIfEmpty(Mono.defer(() -> Mono.error(new IllegalArgumentException("그룹에 속하지 않은 유저입니다."))));
+            .switchIfEmpty(Mono.defer(() -> Mono.error(new GroupException(GroupErrorCode.USER_NOT_IN_GROUP))));
     }
 
     public Mono<List<GroupUserResponse>> getMembers(Integer userId, Integer groupId) {
@@ -134,7 +125,7 @@ public class GroupService {
                     return groupUserRepository.findAllByGroupId(groupId)
                         .collectList();
                 } else {
-                    return Mono.error(new IllegalArgumentException("그룹 번호가 유효하지 않거나, 그룹에 속하지 않은 유저입니다."));
+                    return Mono.error(new GroupException(GroupErrorCode.INVALID_GROUP_OR_USER));
                 }
             });
     }
@@ -148,7 +139,7 @@ public class GroupService {
                     .flatMap(group -> groupUserRepository.existsGroupUser(group.getId(), userId)
                         .flatMap(userExists -> {
                             if (userExists) {
-                                return Mono.error(new IllegalArgumentException("이미 그룹에 등록된 유저입니다."));
+                                return Mono.error(new GroupException(GroupErrorCode.USER_ALREADY_IN_GROUP));
                             } else {
                                 return Mono.defer(() -> groupUserRepository.save(GroupUser.builder()
                                         .groupId(groupId)
@@ -160,36 +151,30 @@ public class GroupService {
                                     .map(GroupUser::getId));
                             }
                         }))
-                    .switchIfEmpty(Mono.defer(() -> Mono.error(new IllegalArgumentException("유효하지 않는 그룹 번호입니다.")))))
+                    .switchIfEmpty(Mono.defer(() -> Mono.error(new GroupException(GroupErrorCode.GROUP_NOT_FOUND)))))
             .switchIfEmpty(Mono.defer(() -> Mono.error(new IllegalArgumentException("존재하지 않는 유저입니다."))));
     }
 
     @Transactional
-    public Mono<Map<String, Object>> modifyMemberPermission(Integer userId, Integer groupId, Integer targetUserId, String role) {
+    public Mono<Integer> modifyMemberPermission(Integer userId, Integer groupId, Integer targetUserId, String role) {
         if (!GroupUserRole.isValidRole(role))
-            return Mono.error(new IllegalArgumentException("유효하지 않는 그룹 유저 권한입니다."));
+            return Mono.error(new GroupException(GroupErrorCode.INVALID_GROUP_USER_ROLE));
         
         return groupRepository.findById(groupId)
             .flatMap(group -> groupUserRepository.findGroupManager(group.getId())
                 .flatMap(groupManager -> {
                     if (!groupManager.getId().equals(userId)) {
-                        return Mono.error(new IllegalArgumentException("그룹 멤버 수정 권한이 없는 유저입니다."));
+                        return Mono.error(new GroupException(GroupErrorCode.NO_GROUP_MANAGEMENT_PERMISSION));
                     }
 
                     return groupUserRepository.findGroupUser(group.getId(), targetUserId)
                         .flatMap(targetUser -> {
                             targetUser.setRole(role);
                             return groupUserRepository.save(targetUser)
-                                .map(updatedUser -> {
-                                    Map<String, Object> data = new HashMap<>();
-                                    data.put("groupId", updatedUser.getGroupId());
-                                    data.put("userId", updatedUser.getUserId());
-                                    data.put("role", updatedUser.getRole());
-                                    return data;
-                                });
+                                .then(Mono.just(targetUser.getId()));
                         })
-                        .switchIfEmpty(Mono.defer(() -> Mono.error(new IllegalArgumentException("존재하지 않는 유저입니다."))));
+                        .switchIfEmpty(Mono.defer(() -> Mono.error(new GroupException(GroupErrorCode.USER_NOT_IN_GROUP))));
                 }))
-            .switchIfEmpty(Mono.defer(() -> Mono.error(new IllegalArgumentException("유효하지 않는 그룹 번호입니다."))));
+            .switchIfEmpty(Mono.defer(() -> Mono.error(new GroupException(GroupErrorCode.GROUP_NOT_FOUND))));
     }
 }
