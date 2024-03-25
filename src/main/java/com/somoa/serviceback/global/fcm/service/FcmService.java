@@ -62,14 +62,13 @@ public class FcmService {
 
     private String getAccessToken() throws IOException {
         String firebaseConfigPath = "fcm-admin-sdk.json";
-
         GoogleCredentials googleCredentials = GoogleCredentials
                 .fromStream(new ClassPathResource(firebaseConfigPath).getInputStream())
-                .createScoped(List.of("https://www.googleapis.com/auth/cloud-platform"));
-
+                .createScoped(List.of("https://www.googleapis.com/auth/cloud-platform"));;
         googleCredentials.refreshIfExpired();
         return googleCredentials.getAccessToken().getTokenValue();
     }
+
 
     private String createMessage(FcmSendDto fcmSendDto) {
         ObjectMapper objectMapper = new ObjectMapper();
@@ -91,58 +90,63 @@ public class FcmService {
     }
 
     public Mono<Integer> sendMessageToGroup(int groupId, String title, String body) {
-
         return Mono.fromCallable(this::getAccessToken)
-                .flatMap(accessToken ->
-                        // groupId에 해당하는 모든 userId를 조회하여 Stream으로 변환
-                        groupUserRepository.findUserIdsByGroupId(groupId).collectList()
-                                .flatMap(userIds -> {
-                                    // 모든 userId에 대한 FcmToken을 조회
-                                    return Flux.fromIterable(userIds)
-                                            .flatMap(userId -> fcmRepository.findByUserId(userId))
-                                            .collectList()
-                                            .flatMap(fcmTokens -> {
-                                                // FcmToken에서 token만 추출
-                                                List<String> tokens = fcmTokens.stream().map(FcmToken::getToken).collect(Collectors.toList());
-                                                // 모든 토큰에 대해 메시지 전송
-                                                return sendGroupMessage(tokens, title, body, accessToken);
-                                            });
-                                })
-                ).onErrorReturn(0);
+                .flatMap(accessToken ->{
+                    System.out.println(accessToken);
+                    return groupUserRepository.findUserIdsByGroupId(groupId).collectList()
+                            .flatMap(userIds -> {
+                                return Flux.fromIterable(userIds)
+                                        .flatMap(userId -> fcmRepository.findByUserId(userId))
+                                        .collectList()
+                                        .flatMap(fcmTokens -> {
+                                            // FcmToken에서 token만 추출
+                                            List<String> tokens = fcmTokens.stream().map(FcmToken::getToken).collect(Collectors.toList());
+                                            // 모든 토큰에 대해 메시지 전송
+                                            return sendGroupMessage(tokens, title, body, accessToken);
+                                        });
+                            });
+                }).onErrorReturn(0);
     }
 
     private Mono<Integer> sendGroupMessage(List<String> tokens, String title, String body, String accessToken) {
         // 메시지 구성
         String messagePayload = createMessagePayload(tokens, title, body);
+        System.out.println(messagePayload);
         // FCM에 메시지 전송
         return webClient.post()
-                .uri("https://fcm.googleapis.com/v1/projects/your-project-id/messages:send")
+                .uri("https://fcm.googleapis.com/v1/projects/somoa-8dea6/messages:send")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(messagePayload)
                 .retrieve()
                 .bodyToMono(String.class)
                 .map(response -> 1) // 성공적으로 메시지를 전송했으면 1 반환
+                .doOnError(error -> System.err.println("Error sending group message: " + error.getMessage()))
                 .onErrorReturn(0); // 오류가 발생하면 0 반환
     }
 
     private String createMessagePayload(List<String> tokens, String title, String body) {
-        // ObjectMapper를 사용하여 메시지를 JSON 형식으로 변환
-        ObjectMapper objectMapper = new ObjectMapper();
-        FcmGroupMessageDto message = FcmGroupMessageDto.builder()
-                .validateOnly(false)
-                .message(FcmGroupMessageDto.Message.builder()
-                        .notification(FcmGroupMessageDto.Notification.builder()
-                                .title(title)
-                                .body(body)
-                                .build())
-                        .registrationIds(tokens)
-                        .build())
-                .build();
         try {
-            return objectMapper.writeValueAsString(message);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to convert message to JSON", e);
+            // ObjectMapper를 사용하여 메시지를 JSON 형식으로 변환
+            System.out.println("Create!!!");
+            ObjectMapper objectMapper = new ObjectMapper();
+            FcmGroupMessageDto message = FcmGroupMessageDto.builder()
+                    .validateOnly(false)
+                    .message(FcmGroupMessageDto.Message.builder()
+                            .notification(FcmGroupMessageDto.Notification.builder()
+                                    .title(title)
+                                    .body(body)
+                                    .build())
+                            .registrationIds(tokens)
+                            .build())
+                    .build();
+            try {
+                return objectMapper.writeValueAsString(message);
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException("Failed to convert message to JSON", e);
+            }
+        }catch (Exception e){
+            throw new RuntimeException("Failed to create message payload", e);
         }
     }
 }

@@ -44,7 +44,7 @@ public class DeviceService {
     private final DeviceSupplyRepository deviceSupplyRepository;
     private final GroupSupplyRepository groupSupplyRepository;
 
-    private final String MANUFACTURER_SERVER_URL = "http://localhost:9090";
+    private final String MANUFACTURER_SERVER_URL = "http://localhost:3000";
     private final String DEVICE_API_PATH = "/api/device";
     private final String DEVICE_ID_QUERY_PARAM = "device_id";
 
@@ -56,14 +56,15 @@ public class DeviceService {
         final String type = DeviceType.WASHER;
         final String manufacturer = "제조사";
 
-//        Mono<DeviceExternalApiResponse> responseMono = getDeviceResponse(param.getCode());
+        Mono<DeviceExternalApiResponse> responseMono = getDeviceResponse(param.getCode());
+        /**
         Mono<DeviceExternalApiResponse> responseMono = Mono.just(DeviceExternalApiResponse.builder()
                 .model(model)
                 .type(type)
                 .manufacturer(manufacturer)
                 .build());
         // ****************************************
-
+        */
         // response data
         Map<String, Object> data = new HashMap<>();
         data.put("deviceId", param.getCode());
