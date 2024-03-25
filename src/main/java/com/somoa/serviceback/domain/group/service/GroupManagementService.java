@@ -18,17 +18,17 @@ import com.somoa.serviceback.domain.group.exception.GroupException;
 import com.somoa.serviceback.domain.group.repository.GroupRepository;
 import com.somoa.serviceback.domain.group.repository.GroupUserRepository;
 
-import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class GroupManagementService {
+public class GroupManagementService extends GroupBaseService {
 
-    private final GroupRepository groupRepository;
-    private final GroupUserRepository groupUserRepository;
+    public GroupManagementService(GroupRepository groupRepository,
+                                  GroupUserRepository groupUserRepository) {
+        super(groupRepository, groupUserRepository);
+    }
 
     @Transactional
     public Mono<Map<String, Object>> save(Integer userId, GroupRegisterParam param) {
@@ -88,21 +88,5 @@ public class GroupManagementService {
                 return findGroup(groupId)
                     .flatMap(groupRepository::delete);
             });
-    }
-
-    private Mono<Group> findGroup(Integer groupId) {
-        return groupRepository.findById(groupId)
-            .switchIfEmpty(Mono.error(new GroupException(GroupErrorCode.GROUP_NOT_FOUND)));
-    }
-
-    private Mono<GroupUser> findGroupUser(Integer groupId, Integer userId) {
-        return groupUserRepository.findGroupUser(groupId, userId)
-            .switchIfEmpty(Mono.error(new GroupException(GroupErrorCode.USER_NOT_IN_GROUP)));
-    }
-
-    private Mono<Boolean> hasGroupManagementPermission(Integer groupId, Integer userId) {
-        return groupUserRepository.findGroupManager(groupId)
-            .map(groupManager -> groupManager.getUserId().equals(userId))
-            .defaultIfEmpty(false);
     }
 }

@@ -7,20 +7,25 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.somoa.serviceback.domain.group.error.GroupErrorCode;
 import com.somoa.serviceback.domain.group.exception.GroupException;
+import com.somoa.serviceback.domain.group.repository.GroupRepository;
 import com.somoa.serviceback.domain.group.repository.GroupUserRepository;
 import com.somoa.serviceback.domain.order.dto.OrderResponse;
 import com.somoa.serviceback.domain.order.repository.OrderRepository;
 
-import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class GroupOrderService {
+public class GroupOrderService extends GroupBaseService{
 
-    private final GroupUserRepository groupUserRepository;
     private final OrderRepository orderRepository;
+
+    public GroupOrderService(GroupRepository groupRepository,
+                             GroupUserRepository groupUserRepository,
+                             OrderRepository orderRepository) {
+        super(groupRepository, groupUserRepository);
+        this.orderRepository = orderRepository;
+    }
 
     public Mono<List<OrderResponse>> getOrders(Integer userId, Integer groupId) {
         return groupUserRepository.existsGroupUser(groupId, userId)

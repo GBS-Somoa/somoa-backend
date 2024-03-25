@@ -70,7 +70,7 @@ public class GroupController {
     @DeleteMapping("/{groupId}/leave")
     public Mono<ResponseEntity<ResponseHandler>> leave(@PathVariable("groupId") Integer groupId) {
         return groupUserService.leave(loginUserId, groupId)
-            .flatMap(data -> ResponseHandler.ok("그룹에서 나갔습니다."));
+            .then(ResponseHandler.ok("그룹에서 나갔습니다."));
     }
 
     @GetMapping("/{groupId}/users")
@@ -83,7 +83,7 @@ public class GroupController {
     public Mono<ResponseEntity<ResponseHandler>> addGroupMember(@PathVariable("groupId") Integer groupId,
         @RequestBody GroupUserRegisterParam param) {
         return groupUserService.addMember(groupId, param)
-            .flatMap(data -> ResponseHandler.ok("멤버를 추가했습니다."));
+            .then(ResponseHandler.ok("멤버를 추가했습니다."));
     }
 
     @PatchMapping("/{groupId}/users/{userId}/permission")
@@ -91,7 +91,7 @@ public class GroupController {
                                                                              @PathVariable("userId") Integer userId,
                                                                              @RequestBody GroupUserRoleParam param) {
         return groupUserService.modifyMemberPermission(loginUserId, groupId, userId, param.getRole())
-            .flatMap(data -> ResponseHandler.ok("멤버 권한을 수정했습니다."));
+            .then(ResponseHandler.ok("멤버 권한을 수정했습니다."));
     }
 
     @GetMapping("/{groupId}/orders")

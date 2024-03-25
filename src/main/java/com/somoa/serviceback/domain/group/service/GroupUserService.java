@@ -15,20 +15,23 @@ import com.somoa.serviceback.domain.group.repository.GroupRepository;
 import com.somoa.serviceback.domain.group.repository.GroupUserRepository;
 import com.somoa.serviceback.domain.user.repository.UserRepository;
 
-import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class GroupUserService {
+public class GroupUserService extends GroupBaseService {
 
-    private final GroupRepository groupRepository;
-    private final GroupUserRepository groupUserRepository;
     private final UserRepository userRepository;
 
+    public GroupUserService(GroupRepository groupRepository,
+                            GroupUserRepository groupUserRepository,
+                            UserRepository userRepository) {
+        super(groupRepository, groupUserRepository);
+        this.userRepository = userRepository;
+    }
+
     public Mono<List<GroupUserResponse>> getMembers(Integer userId, Integer groupId) {
-        return groupUserRepository.existsGroupUser(groupId, userId)
+        return existsGroupUser(groupId, userId)
             .flatMap(userExists -> {
                 if (userExists) {
                     return groupUserRepository.findAllByGroupId(groupId)
@@ -44,60 +47,56 @@ public class GroupUserService {
         final Integer userId = param.getUserId();
 
         return userRepository.findById(userId)
-                .flatMap(user -> groupRepository.findById(groupId)
-                    .flatMap(group -> groupUserRepository.existsGroupUser(group.getId(), userId)
-                        .flatMap(userExists -> {
-                            if (userExists) {
-                                return Mono.error(new GroupException(GroupErrorCode.USER_ALREADY_IN_GROUP));
-                            } else {
-                                return Mono.defer(() -> groupUserRepository.save(GroupUser.builder()
-                                        .groupId(groupId)
-                                        .userId(userId)
-                                        .role(GroupUserRole.USER_ALL)
-                                        .orderedNum(0)  // TODO: orderNum 맨 마지막으로 할당해야 함
-                                        .alarm(true)
-                                        .build())
-                                    .map(GroupUser::getId));
-                            }
-                        }))
-                    .switchIfEmpty(Mono.defer(() -> Mono.error(new GroupException(GroupErrorCode.GROUP_NOT_FOUND)))))
+            .flatMap(user -> findGroup(groupId)
+                .flatMap(group -> existsGroupUser(groupId, userId)
+                    .flatMap(userExists -> {
+                        if (userExists) {
+                            return Mono.error(new GroupException(GroupErrorCode.USER_ALREADY_IN_GROUP));
+                        } else {
+                            return Mono.defer(() -> groupUserRepository.save(GroupUser.builder()
+                                    .groupId(groupId)
+                                    .userId(userId)
+                                    .role(GroupUserRole.USER_ALL)
+                                    .orderedNum(0)  // TODO: orderNum 맨 마지막으로 할당해야 함
+                                    .alarm(true)
+                                    .build())
+                                .map(GroupUser::getId));
+                        }
+                    })))
             .switchIfEmpty(Mono.defer(() -> Mono.error(new IllegalArgumentException("존재하지 않는 유저입니다."))));
     }
 
     @Transactional
-    public Mono<Integer> modifyMemberPermission(Integer userId, Integer groupId, Integer targetUserId, String role) {
+    public Mono<Void> modifyMemberPermission(Integer userId, Integer groupId, Integer targetUserId, String role) {
         if (!GroupUserRole.isValidRole(role))
             return Mono.error(new GroupException(GroupErrorCode.INVALID_GROUP_USER_ROLE));
-        
-        return groupRepository.findById(groupId)
-            .flatMap(group -> groupUserRepository.findGroupManager(group.getId())
+
+        return findGroup(groupId)
+            .flatMap(group -> findGroupManager(groupId)
                 .flatMap(groupManager -> {
                     if (!groupManager.getId().equals(userId)) {
                         return Mono.error(new GroupException(GroupErrorCode.NO_GROUP_MANAGEMENT_PERMISSION));
                     }
-
-                    return groupUserRepository.findGroupUser(group.getId(), targetUserId)
+                    return findGroupUser(groupId, targetUserId)
                         .flatMap(targetUser -> {
                             targetUser.setRole(role);
                             return groupUserRepository.save(targetUser)
-                                .then(Mono.just(targetUser.getId()));
-                        })
-                        .switchIfEmpty(Mono.defer(() -> Mono.error(new GroupException(GroupErrorCode.USER_NOT_IN_GROUP))));
-                }))
-            .switchIfEmpty(Mono.defer(() -> Mono.error(new GroupException(GroupErrorCode.GROUP_NOT_FOUND))));
+                                .then();
+                        });
+                })
+            );
     }
 
     @Transactional
-    public Mono<Integer> leave(Integer userId, Integer groupId) {
-        return groupUserRepository.findGroupUser(groupId, userId)
+    public Mono<Void> leave(Integer userId, Integer groupId) {
+        return findGroupUser(groupId, userId)
             .flatMap(existingGroupUser -> {
                 if (existingGroupUser.getRole().equals(GroupUserRole.MANAGER)) {
                     return Mono.error(new GroupException(GroupErrorCode.GROUP_MANAGER_CANNOT_LEAVE));
                 } else {
                     return groupUserRepository.delete(existingGroupUser)
-                        .then(Mono.just(existingGroupUser.getId()));
+                        .then();
                 }
-            })
-            .switchIfEmpty(Mono.defer(() -> Mono.error(new GroupException(GroupErrorCode.USER_NOT_IN_GROUP))));
+            });
     }
 }
