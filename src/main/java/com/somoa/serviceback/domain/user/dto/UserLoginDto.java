@@ -9,4 +9,6 @@ import lombok.Getter;
 public class UserLoginDto {
     private String username;
     private String password;
+    private String mobileDeviceId;
+    private String fcmToken;
 }

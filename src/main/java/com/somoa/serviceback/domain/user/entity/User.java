@@ -5,6 +5,8 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
+import java.sql.Timestamp;
+
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
@@ -25,4 +27,10 @@ public class User {
 
     @Column("user_nickname")
     private String nickname;
+
+    @Column("created_at")
+    private Timestamp createdAt;
+
+    @Column("updated_at")
+    private Timestamp updatedAt;
 }
