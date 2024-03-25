@@ -3,11 +3,7 @@ package com.somoa.serviceback.global.config;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
-import org.springframework.data.mongodb.core.query.Query;
-
-import java.util.Set;
 
 @Configuration
 public class MongoConfig {
@@ -16,6 +12,7 @@ public class MongoConfig {
     public MongoConfig(ReactiveMongoTemplate reactiveMongoTemplate) {
         this.reactiveMongoTemplate = reactiveMongoTemplate;
     }
+
     @Bean
     CommandLineRunner commandLineRunner(ReactiveMongoTemplate reactiveMongoTemplate) {
         return args -> {
