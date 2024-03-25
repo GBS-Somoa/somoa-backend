@@ -1,31 +1,21 @@
 package com.somoa.serviceback.domain.group.service;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.somoa.serviceback.domain.group.dto.GroupDetailResponse;
-import com.somoa.serviceback.domain.group.dto.GroupModifyParam;
-import com.somoa.serviceback.domain.group.dto.GroupRegisterParam;
-import com.somoa.serviceback.domain.group.dto.GroupResponse;
 import com.somoa.serviceback.domain.group.dto.GroupUserRegisterParam;
 import com.somoa.serviceback.domain.group.dto.GroupUserResponse;
-import com.somoa.serviceback.domain.group.entity.Group;
 import com.somoa.serviceback.domain.group.entity.GroupUser;
 import com.somoa.serviceback.domain.group.entity.GroupUserRole;
 import com.somoa.serviceback.domain.group.error.GroupErrorCode;
 import com.somoa.serviceback.domain.group.exception.GroupException;
 import com.somoa.serviceback.domain.group.repository.GroupRepository;
 import com.somoa.serviceback.domain.group.repository.GroupUserRepository;
-import com.somoa.serviceback.domain.order.dto.OrderResponse;
-import com.somoa.serviceback.domain.order.repository.OrderRepository;
 import com.somoa.serviceback.domain.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
