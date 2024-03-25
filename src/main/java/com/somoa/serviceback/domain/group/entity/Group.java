@@ -9,7 +9,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Table("groups")
+@Table("`group`")
 @Data
 @Builder
 @NoArgsConstructor
