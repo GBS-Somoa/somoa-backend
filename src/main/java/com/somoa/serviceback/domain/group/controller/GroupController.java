@@ -79,4 +79,10 @@ public class GroupController {
         return groupService.modifyMemberPermission(loginUserId, groupId, userId, param.getRole())
             .flatMap(data -> ResponseHandler.ok("멤버 권한을 수정했습니다."));
     }
+
+    @GetMapping("/{groupId}/orders")
+    public Mono<ResponseEntity<ResponseHandler>> getGroupOrders(@PathVariable("groupId") Integer groupId) {
+        return groupService.getOrders(loginUserId, groupId)
+            .flatMap(data -> ResponseHandler.ok(data, "그룹에 속한 주문 목록을 조회했습니다."));
+    }
 }
