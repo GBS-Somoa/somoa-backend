@@ -18,10 +18,10 @@ public class Order {
 
     @Id
     @Column("order_id")
-    private Long id;
+    private int id;
 
     @Column("group_id")
-    private Long groupId;
+    private int groupId;
 
     @Column("supply_id")
     private int supplyId;
