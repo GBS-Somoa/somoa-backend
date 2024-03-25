@@ -22,7 +22,6 @@ import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 @Service
 @Slf4j
@@ -120,7 +119,7 @@ public class DeviceService {
                 .next();
     }
 
-    public Mono<DeviceApiResponse> getDeviceResponse(String deviceId) {
+    private Mono<DeviceApiResponse> getDeviceResponse(String deviceId) {
         WebClient webClient = WebClient.create(MANUFACTURER_SERVER_URL);
 
         return webClient.get()
