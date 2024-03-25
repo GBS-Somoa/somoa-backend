@@ -47,14 +47,14 @@ public class DeviceController {
     @PatchMapping("/{deviceId}")
     public Mono<ResponseEntity<ResponseHandler>> update(@PathVariable String deviceId, @RequestBody DeviceUpdateParam param) {
         return deviceService.update(userId, deviceId, param)
-                .flatMap(ResponseHandler::ok)
+                .flatMap(data -> ResponseHandler.ok("기기 정보를 수정했습니다."))
                 .onErrorResume(this::handleError);
     }
 
     @DeleteMapping("/{deviceId}")
     public Mono<ResponseEntity<ResponseHandler>> delete(@PathVariable String deviceId) {
         return deviceService.delete(userId, deviceId)
-                .flatMap(ResponseHandler::ok)
+                .flatMap(data -> ResponseHandler.ok("기기를 삭제했습니다."))
                 .onErrorResume(this::handleError);
     }
 
