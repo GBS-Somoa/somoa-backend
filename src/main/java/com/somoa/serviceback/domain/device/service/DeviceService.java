@@ -154,10 +154,10 @@ public class DeviceService {
         return deviceRepository.findById(deviceId)
                 .switchIfEmpty(Mono.error(new DeviceNotFoundException("기기를 찾을 수 없습니다 : " + deviceId)))
                 .flatMap(device -> deviceRepository.findGroupByDeviceId(deviceId)
-                        .flatMap(group -> groupUserRepository.findRole(group.getId(), userId)
+                        .flatMap(group -> groupUserRepository.findGroupUser(group.getId(), userId)
                                 .switchIfEmpty(Mono.error(new IllegalArgumentException("사용자에게 권한이 없습니다.")))
-                                .flatMap(role -> {
-                                    if (!role.equals(GroupUserRole.USER_ONLY_SUPPLY_MANAGE)) {
+                                .flatMap(groupUser -> {
+                                    if (!groupUser.getRole().equals(GroupUserRole.USER_ONLY_SUPPLY_MANAGE)) {
                                         device.setNickname(param.getDeviceName());
                                         return deviceRepository.save(device)
                                                 .then(Mono.just("기기 이름이 성공적으로 수정되었습니다."));
@@ -171,15 +171,22 @@ public class DeviceService {
         return deviceRepository.findById(deviceId)
                 .switchIfEmpty(Mono.error(new DeviceNotFoundException("기기를 찾을 수 없습니다 : " + deviceId)))
                 .flatMap(device -> deviceRepository.findGroupByDeviceId(deviceId)
-                        .flatMap(group -> groupUserRepository.findRole(group.getId(), userId)
+                        .flatMap(group -> groupUserRepository.findGroupUser(group.getId(), userId)
                                 .switchIfEmpty(Mono.error(new IllegalArgumentException("사용자에게 권한이 없습니다.")))
-                                .flatMap(role -> {
-                                    if (!role.equals(GroupUserRole.USER_ONLY_SUPPLY_MANAGE)) {
-                                        return deviceRepository.delete(device)
-                                                .then(Mono.just("기기가 성공적으로 삭제되었습니다."));
+                                .flatMap(groupUser -> {
+                                    if (!groupUser.getRole().equals(GroupUserRole.USER_ONLY_SUPPLY_MANAGE)) {
+                                        return deleteDeviceSupply(device.getId())
+                                                .then(deviceRepository.delete(device)
+                                                        .then(Mono.just("기기가 성공적으로 삭제되었습니다.")));
+
                                     } else {
                                         return Mono.error(new IllegalArgumentException("사용자에게 권한이 없습니다."));
                                     }
                                 })));
+    }
+
+    private Mono<Void> deleteDeviceSupply(String deviceId) {
+        return deviceSupplyRepository.deleteByDeviceId(deviceId)
+                .then(Mono.empty());
     }
 }
