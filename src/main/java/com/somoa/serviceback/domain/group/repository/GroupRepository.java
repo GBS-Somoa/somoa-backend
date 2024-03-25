@@ -10,7 +10,7 @@ import reactor.core.publisher.Flux;
 public interface GroupRepository extends ReactiveCrudRepository<Group, Integer> {
 
 	@Query("SELECT * "
-		+ "   FROM groups g "
+		+ "   FROM group g "
 		+ "   JOIN group_user gu "
 		+ "     ON g.group_id = gu.group_id "
 		+ "  WHERE gu.user_id = :userId")
