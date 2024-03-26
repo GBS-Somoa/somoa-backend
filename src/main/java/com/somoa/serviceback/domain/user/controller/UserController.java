@@ -1,5 +1,8 @@
 package com.somoa.serviceback.domain.user.controller;
 
+import com.somoa.serviceback.domain.device.service.DeviceService;
+import com.somoa.serviceback.domain.group.dto.GroupRegisterParam;
+import com.somoa.serviceback.domain.group.service.GroupManagementService;
 import com.somoa.serviceback.domain.user.dto.UserLoginDto;
 import com.somoa.serviceback.domain.user.dto.UserSignupDto;
 import com.somoa.serviceback.domain.user.service.UserService;
@@ -32,7 +35,7 @@ public class UserController {
     final JwtService jwtService;
     final AuthConverter authConverter;
     final FcmService fcmService;
-
+    final GroupManagementService groupManagementService;
     private final FcmRepository fcmRepository;
 
     @GetMapping("/refresh")
@@ -56,10 +59,12 @@ public class UserController {
         return userService.loginUser(user.getUsername(), user.getPassword())
                 .flatMap(response -> {
                     String userId = response.get("userId").toString();
-                    Map<String, String> tokens = (Map<String, String>) response.get("tokens");
+                    String nickname = response.get("nickname").toString();
+                    Map<String, String> data = (Map<String, String>) response.get("tokens");
+                    data.put("nickname", nickname);
                     // FCM 토큰 저장 로직 호출
                     return fcmService.saveOrUpdateFcmToken(Integer.parseInt(userId), user.getMobileDeviceId(), user.getFcmToken())
-                            .then(ResponseHandler.ok(tokens, "로그인 성공")); // 변경된 부분
+                            .then(ResponseHandler.ok(data, "로그인 성공")); // 변경된 부분
                 })
                 .onErrorResume(e -> {
                     if (e instanceof UsernameNotFoundException || e instanceof BadCredentialsException) {
@@ -82,25 +87,20 @@ public class UserController {
     @PostMapping("/signup")
     public Mono<ResponseEntity<ResponseHandler>> signUp(@RequestBody UserSignupDto userSignupDto) {
         return userService.signUp(userSignupDto)
-                .flatMap(data -> ResponseHandler.ok(data, "회원가입이 성공적으로 완료되었습니다."))
+                .flatMap(data -> {
+                    Map<String, Object> responseData = (Map<String, Object>) data;
+                    Integer userId = (Integer) responseData.get("id");
+                    GroupRegisterParam groupRegisterParam = new GroupRegisterParam();
+                    groupRegisterParam.setGroupName("우리집");
+                    return groupManagementService.save(userId, groupRegisterParam)
+                            .flatMap(data2 -> ResponseHandler.ok(responseData, "회원가입이 성공적으로 완료되었습니다."));
+                })
                 .onErrorResume(error -> {
                     if (error instanceof IllegalArgumentException) {
-                        return ResponseHandler.error(error.getMessage(), HttpStatus.BAD_REQUEST);
+                        return ResponseHandler.error("에러 발생", HttpStatus.BAD_REQUEST);
                     }
-                    return ResponseHandler.error("내부 서버 오류로 인해 처리할 수 없습니다.", HttpStatus.INTERNAL_SERVER_ERROR);
+                    return ResponseHandler.error("에러 발생", HttpStatus.INTERNAL_SERVER_ERROR);
                 });
-    }
-
-    @GetMapping("/blockcheck")
-    public Mono<ResponseEntity<ResponseHandler>> checkBlocking() {
-        try {
-            // 블로킹 작업 시뮬레이션
-            Thread.sleep(1000); // 1초 동안 대기
-            return ResponseHandler.ok("hello", "처리 성공");
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return ResponseHandler.error("에러 발생", HttpStatus.INTERNAL_SERVER_ERROR);
-        }
     }
 
     @GetMapping("/check")
