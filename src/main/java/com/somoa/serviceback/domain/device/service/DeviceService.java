@@ -12,6 +12,7 @@ import com.somoa.serviceback.domain.supply.entity.*;
 import com.somoa.serviceback.domain.supply.repository.DeviceSupplyRepository;
 import com.somoa.serviceback.domain.supply.repository.GroupSupplyRepository;
 import com.somoa.serviceback.domain.supply.repository.SupplyRepository;
+import com.somoa.serviceback.global.config.PropertiesConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -35,8 +36,7 @@ public class DeviceService {
     private final SupplyRepository supplyRepository;
     private final DeviceSupplyRepository deviceSupplyRepository;
     private final GroupSupplyRepository groupSupplyRepository;
-
-    private final String MANUFACTURER_SERVER_URL = "http://localhost:3000";
+    private final PropertiesConfig propertiesConfig;
     private final String DEVICE_API_PATH = "/api/device";
     private final String DEVICE_ID_QUERY_PARAM = "device_id";
 
@@ -136,7 +136,7 @@ public class DeviceService {
     }
 
     private Mono<DeviceApiResponse> getDeviceResponse(String deviceId) {
-        WebClient webClient = WebClient.create(MANUFACTURER_SERVER_URL);
+        WebClient webClient = WebClient.create(propertiesConfig.getManufacturerServerUrl());
 
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder.path(DEVICE_API_PATH)
