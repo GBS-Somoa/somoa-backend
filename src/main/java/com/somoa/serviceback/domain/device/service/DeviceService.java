@@ -205,8 +205,7 @@ public class DeviceService {
                                     }
                                     return Mono.empty();
                                 })
-                                .then(deviceSupplyRepository.deleteById(deviceSupply.getId()))
                 )
-                .then();
+                .then(deviceSupplyRepository.deleteAllByDeviceId(deviceId));
     }
 }
