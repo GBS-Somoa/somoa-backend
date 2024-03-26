@@ -35,9 +35,9 @@ public class OrderController {
                 });
     }
 
-    @PatchMapping("/{order_id}")
-    public Mono<ResponseEntity<ResponseHandler>> updateOrderStatus(@PathVariable("order_id") String orderId, @RequestBody OrderStatusUpdateDto orderStatusUpdateDto) {
-        return orderService.updateOrderStatus(orderId, orderStatusUpdateDto)
+    @PatchMapping("/{order_store}/{order_id}")
+    public Mono<ResponseEntity<ResponseHandler>> updateOrderStatus(@PathVariable("order_store") String orderStore, @PathVariable("order_id") String orderId, @RequestBody OrderStatusUpdateDto orderStatusUpdateDto) {
+        return orderService.updateOrderStatus(orderStore, orderId, orderStatusUpdateDto)
                 .flatMap(order -> ResponseHandler.ok(null, "주문 상태 변경에 성공했습니다."))
                 .onErrorResume(error -> {
                     if (error instanceof IllegalArgumentException) {

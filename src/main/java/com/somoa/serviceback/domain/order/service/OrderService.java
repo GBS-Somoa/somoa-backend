@@ -3,13 +3,12 @@ package com.somoa.serviceback.domain.order.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.somoa.serviceback.domain.order.entity.Order;
 import com.somoa.serviceback.domain.order.dto.OrderSaveDto;
 import com.somoa.serviceback.domain.order.dto.OrderStatusUpdateDto;
-import com.somoa.serviceback.domain.order.entity.Order;
 import com.somoa.serviceback.domain.order.repository.OrderRepository;
-//import com.somoa.serviceback.global.fcm.dto.FcmSendDto;
-//import com.somoa.serviceback.global.fcm.repository.FcmRepository;
-//import com.somoa.serviceback.global.fcm.service.FcmService;
+import com.somoa.serviceback.domain.supply.repository.SupplyRepository;
+import com.somoa.serviceback.global.fcm.service.FcmService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,12 +22,24 @@ import java.util.Map;
 public class OrderService {
 
     private final OrderRepository orderRepository;
-//    private final FcmRepository fcmRepository;
-//    final FcmService fcmService;
+    private final SupplyRepository supplyRepository;
+    final FcmService fcmService;
+
+    public int parseOrderAmount(String orderAmount) {
+        if (orderAmount.endsWith("L")) {
+            String amountInLiters = orderAmount.substring(0, orderAmount.length() - 1);
+            return Integer.parseInt(amountInLiters) * 1000;
+        } else if (orderAmount.endsWith("ml")) {
+            String amountInMilliliters = orderAmount.substring(0, orderAmount.length() - 2);
+            return Integer.parseInt(amountInMilliliters);
+        } else {
+            throw new IllegalArgumentException("Invalid order amount: " + orderAmount);
+        }
+    }
 
     @Transactional
     public Mono<Map<String, Object>> saveOrder(OrderSaveDto orderSaveDto) {
-        return orderRepository.findByOrderStoreId(orderSaveDto.getOrderStoreId())
+        return orderRepository.findByOrderStoreIdAndOrderStore(orderSaveDto.getOrderStoreId(), orderSaveDto.getOrderStore())
                 .hasElement()
                 .filter(exists -> !exists)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("이미 등록된 주문입니다.")))
@@ -43,29 +54,20 @@ public class OrderService {
                         .orderCount(orderSaveDto.getOrderCount())
                         .orderAmount(orderSaveDto.getOrderAmount())
                         .build()))
-                // TODO: 그룹 ID에 해당하는 유저들의 token list로 보내게 로직 수정해야함
-//                .flatMap(order -> {
-//                    return fcmRepository.findAll()
-//                            .flatMap(fcmToken -> {
-//                                FcmSendDto fcmSendDto = new FcmSendDto(fcmToken.getToken(), "새로운 주문", order.getOrderStore() + "에서 " + order.getProductName() + " 주문을 완료하였습니다.");
-//                                try{
-//                                    fcmService.sendMessageTo(fcmSendDto);
-//                                } catch (Exception e) {
-//                                    return Mono.error(new IllegalArgumentException("FCM 알림 전송에 실패했습니다."));
-//                                }
-//                                return Mono.just(order);
-//                            })
-//                            .then(Mono.just(order));
-//                })
-                // TODO: supplyId에 해당하는 소모품 임시 용량 추가
-//                .flatMap(order -> {
-//                    return supplyRepository.findById(order.getSupplyId())
-//                            .flatMap(supply -> {
-//                                supply.setAmountTmp(supply.getAmountTmp() + order.getOrderCount());
-//                                return supplyRepository.save(supply);
-//                            })
-//                            .thenReturn(order);
-//                })
+                .flatMap(order -> {
+                    return supplyRepository.findById(order.getSupplyId())
+                            .switchIfEmpty(Mono.error(new IllegalArgumentException("소모품을 찾을 수 없습니다.")))
+                            .flatMap(supply -> {
+                                int orderAmountInMilliliters = parseOrderAmount(order.getOrderAmount());
+                                supply.setAmountTmp(supply.getAmountTmp() + (order.getOrderCount() * orderAmountInMilliliters));
+                                return supplyRepository.save(supply);
+                            })
+                            .thenReturn(order);
+                })
+                .flatMap(order -> {
+                    return fcmService.sendMessageToGroup(order.getGroupId(), "새로운 주문", order.getOrderStore() + "에서 " + order.getProductName() + " 주문을 완료하였습니다.")
+                            .then(Mono.just(order));
+                })
                 .map(order -> {
                     Map<String, Object> response = new HashMap<>();
                     response.put("id", order.getId());
@@ -74,46 +76,45 @@ public class OrderService {
     }
 
     @Transactional
-    public Mono<Order> updateOrderStatus(String orderStoreId, OrderStatusUpdateDto orderStatusUpdateDto) {
-        return orderRepository.findByOrderStoreId(orderStoreId)
+    public Mono<Order> updateOrderStatus(String orderStore, String orderStoreId, OrderStatusUpdateDto orderStatusUpdateDto) {
+        return orderRepository.findByOrderStoreIdAndOrderStore(orderStoreId, orderStore)
                 .flatMap(order -> {
                     order.setOrderStatus(orderStatusUpdateDto.getOrderStatus());
                     return orderRepository.save(order);
                 })
-                // TODO: 주문 상태 = 배송 완료로 변경 시 supplyId에 해당하는 소모품 임시 용량 값 -> 실제 용량 값에 반영
-//                .flatMap(order -> {
-//                    if ("배송 완료".equals(order.getOrderStatus())) {
-//                        return supplyRepository.findById(order.getSupplyId())
-//                                .flatMap(supply -> {
-//                                    supply.setAmount(supply.getAmount() + supply.getAmountTmp());
-//                                    supply.setAmountTmp(0);
-//                                    return supplyRepository.save(supply);
-//                                })
-//                                .thenReturn(order);
-//                    } else {
-//                        return Mono.just(order);
-//                    }
-//                })
-                // TODO: 그룹 ID에 해당하는 유저들의 token list로 보내게 로직 수정해야함
-//                .flatMap(order -> {
-//                    return fcmRepository.findAll()
-//                            .flatMap(fcmToken -> {
-//                                String title;
-//                                if ("주문 취소".equals(order.getOrderStatus())) {
-//                                    title = "주문 상태 변경";
-//                                } else {
-//                                    title = "배송 상태 변경";
-//                                }
-//                                FcmSendDto fcmSendDto = new FcmSendDto(fcmToken.getToken(), title, order.getOrderStatus() + " : " + order.getOrderStore() + "에서 주문한 " + order.getProductName());
-//                                try{
-//                                    fcmService.sendMessageTo(fcmSendDto);
-//                                } catch (Exception e) {
-//                                    return Mono.error(new IllegalArgumentException("FCM 알림 전송에 실패했습니다."));
-//                                }
-//                                return Mono.just(order);
-//                            })
-//                            .then(Mono.just(order));
-//                })
+                .flatMap(order -> {
+                    if ("배송 완료".equals(order.getOrderStatus())) {
+                        return supplyRepository.findById(order.getSupplyId())
+                                .switchIfEmpty(Mono.error(new IllegalArgumentException("소모품을 찾을 수 없습니다.")))
+                                .flatMap(supply -> {
+                                    Integer amount = (Integer) supply.getDetails().get("supplyAmount");
+                                    supply.getDetails().put("supplyAmount", amount + supply.getAmountTmp());
+                                    supply.setAmountTmp(0);
+                                    return supplyRepository.save(supply);
+                                })
+                                .thenReturn(order);
+                    } else if("주문 취소".equals(order.getOrderStatus())) {
+                        return supplyRepository.findById(order.getSupplyId())
+                                .switchIfEmpty(Mono.error(new IllegalArgumentException("소모품을 찾을 수 없습니다.")))
+                                .flatMap(supply -> {
+                                    supply.setAmountTmp(0);
+                                    return supplyRepository.save(supply);
+                                })
+                                .thenReturn(order);
+                    } else {
+                        return Mono.just(order);
+                    }
+                })
+                .flatMap(order -> {
+                    String title;
+                    if ("주문 취소".equals(order.getOrderStatus())) {
+                        title = "주문 상태 변경";
+                    } else {
+                        title = "배송 상태 변경";
+                    }
+                    return fcmService.sendMessageToGroup(order.getGroupId(), title, order.getOrderStatus() + " : " + order.getOrderStore() + "에서 주문한 " + order.getProductName())
+                            .then(Mono.just(order));
+                })
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("주문을 찾을 수 없습니다.")));
     }
 }
