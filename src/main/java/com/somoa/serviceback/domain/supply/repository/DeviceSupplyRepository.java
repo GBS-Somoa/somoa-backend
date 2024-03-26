@@ -2,9 +2,12 @@ package com.somoa.serviceback.domain.supply.repository;
 
 import com.somoa.serviceback.domain.supply.entity.DeviceSupply;
 import org.springframework.data.r2dbc.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 public interface DeviceSupplyRepository extends ReactiveCrudRepository<DeviceSupply, Integer> {
 
@@ -17,4 +20,7 @@ public interface DeviceSupplyRepository extends ReactiveCrudRepository<DeviceSup
 
     @Query("SELECT supply_id FROM device_supply WHERE device_id = :deviceId")
     Flux<String> findAllSupplyIdByDeviceId(String deviceId);
+
+    @Query("SELECT DISTINCT ds.supply_id FROM device_supply ds INNER JOIN device d ON ds.device_id = d.device_id WHERE d.group_id = :groupId")
+    Flux<String> findDistinctSupplyIdsByGroupId(@Param("groupId") Integer groupId);
 }

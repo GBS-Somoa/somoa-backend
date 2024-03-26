@@ -14,6 +14,7 @@ import com.somoa.serviceback.domain.supply.repository.DeviceSupplyRepository;
 import com.somoa.serviceback.domain.supply.repository.GroupSupplyRepository;
 import com.somoa.serviceback.domain.supply.repository.SupplyRepository;
 import com.somoa.serviceback.global.config.PropertiesConfig;
+import com.somoa.serviceback.global.fcm.service.FcmService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,11 +23,15 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static com.somoa.serviceback.domain.supply.service.SupplyService.isCareNeeded;
 
 @Service
 @Slf4j
@@ -39,6 +44,7 @@ public class DeviceService {
     private final DeviceSupplyRepository deviceSupplyRepository;
     private final GroupSupplyRepository groupSupplyRepository;
     private final PropertiesConfig propertiesConfig;
+    final FcmService fcmService;
     private final String DEVICE_API_PATH = "/api/device";
     private final String DEVICE_ID_QUERY_PARAM = "device_id";
 
@@ -228,29 +234,32 @@ public class DeviceService {
                 .then(deviceSupplyRepository.deleteAllByDeviceId(deviceId));
     }
 
-    /**
-     * Todo: 기기-테스트앱 연결해서 진행 + fcm groupId기반 메서드 제대로 생성 후 작업
-     * @param deviceId
-     * @param deviceApiStatusResponse
-     * @return
-    */
     public Mono<Void> statusUpdate(String deviceId, DeviceApiStatusResponse deviceApiStatusResponse) {
-        return deviceSupplyRepository.findAllSupplyIdByDeviceId(deviceId)
-                .collectList()
-                .flatMapMany(Flux::fromIterable)
-                .flatMap(supplyId ->
-                        updateSupplyDetails(supplyId.toString(), deviceApiStatusResponse.getSupplies())
-                ).then();
+        // deviceId로 groupId 조회
+        return deviceRepository.findGroupIdByDeviceId(deviceId)
+                .flatMap(groupId ->
+                        // groupId를 정상적으로 조회한 후에 다음 작업 진행
+                        deviceSupplyRepository.findAllSupplyIdByDeviceId(deviceId)
+                                .collectList()
+                                .flatMap(supplyIds ->
+                                        Flux.fromIterable(supplyIds)
+                                                .flatMap(supplyId ->
+                                                        updateSupplyDetails(supplyId.toString(), deviceApiStatusResponse.getSupplies(), groupId)
+                                                )
+                                                .then()
+                                )
+                );
     }
 
-    private Mono<Void> updateSupplyDetails(String supplyId, List<SupplyStatusParam> supplyStatusParams) {
+    private Mono<Void> updateSupplyDetails(String supplyId, List<SupplyStatusParam> supplyStatusParams, String groupId) {
         return supplyRepository.findById(supplyId)
                 .flatMap(supply -> Flux.fromIterable(supplyStatusParams)
                         .filter(param -> supply.getName().equals(param.getName()) && supply.getType().equals(param.getType()))
                         .next() // 첫 번째 일치하는 요소를 가져옴
                         .flatMap(param -> updateSupply(supply, param)) // 비동기적으로 updateSupply 실행
-                        .flatMap(updatedSupply -> supplyRepository.save(updatedSupply)) // 업데이트된 Supply 저장
-                        .then() // 완료 신호만 전달
+                        .flatMap(supplyRepository::save) // 업데이트된 Supply 저장
+                        .flatMap(updatedSupply -> checkLimitsAndNotify(updatedSupply, groupId)) // 알림 확인 및 전송
+                        .then() // 모든 작업 완료 시 Mono<Void> 반환
                 );
     }
 
@@ -260,24 +269,31 @@ public class DeviceService {
             for (int i = 0; i < param.getDetails().size(); i++) {
                 String detailKey = param.getDetails().get(i);
                 String newValue = param.getValues().get(i);
-                System.out.println(detailKey + "_" + newValue);
                 if ("supplyAmount".equals(detailKey)) {
                     if (newValue != null && !newValue.isEmpty()) {
                         try {
-                            System.out.println(newValue);
                             Integer newAmount = Integer.parseInt(newValue);
                             Integer currentAmount = (Integer) supply.getDetails().getOrDefault(detailKey, 0);
                             Integer updatedAmount = currentAmount - newAmount;
                             if (updatedAmount < 0) {
-                                throw new IllegalArgumentException("Updated supply amount cannot be less than 0.");
+                                throw new IllegalArgumentException("소모품양은 0보다 작을 수 없습니다.");
                             }
                             supply.getDetails().put(detailKey, updatedAmount);
                         } catch (NumberFormatException e) {
-                            throw new IllegalArgumentException("Invalid format for supplyAmount: " + newValue, e);
+                            throw new IllegalArgumentException("유효하지 않은 supplyAmount: " + newValue, e);
                         }
                     } else {
-                        // 빈 문자열 또는 null 값에 대한 처리 (예외 던지기 또는 로그 남기기)
-                        System.out.println("Invalid or empty supply amount value.");
+                        System.out.println("소모데이터가 비어있음");
+                    }
+                }else if ("supplyChangeDate".equals(detailKey)) {
+                    if (newValue != null && !newValue.isEmpty()) {
+                        LocalDate localDate = LocalDate.parse(newValue);
+                        LocalDateTime localDateTime = localDate.atStartOfDay();
+                        Instant instantDate = localDateTime.atZone(ZoneId.of("UTC")).toInstant();
+                            if (newValue != null && !newValue.isEmpty()) {
+                                supply.getDetails().put(detailKey, instantDate);
+                            }
+
                     }
                 } else {
                     if (newValue != null && !newValue.isEmpty()) {
@@ -287,6 +303,17 @@ public class DeviceService {
             }
             return supply;
         }).onErrorMap(NumberFormatException.class, e -> new IllegalArgumentException("Invalid format for supplyAmount", e));
+    }
+
+    private Mono<Void> checkLimitsAndNotify(Supply supply, String groupId) {
+        // isCareNeeded 메서드를 사용하여 care가 필요한지 확인
+        boolean shouldNotify = isCareNeeded(supply);
+        if (shouldNotify) {
+            System.out.println("알림 전송");
+            return fcmService.sendMessageToGroup(Integer.parseInt(groupId), supply.getName()+" 부족", supply.getType()).then();
+        } else {
+            return Mono.empty();
+        }
     }
 
 }
