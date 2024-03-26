@@ -63,14 +63,6 @@ pipeline {
             }
          }
          post {
-            always {
-               sh """
-               res=\$(docker images -f "dangling=true" -q)
-               if [ -n "\$res" ]; then
-                  docker rmi \$res
-               fi
-               """
-            }
             success {
                echo 'Docker image build success :D'
             }
@@ -94,7 +86,6 @@ pipeline {
          when { expression { env.GIT_BRANCH == 'origin/master' || env.GIT_BRANCH == 'origin/develop'} }
          steps {
             sh """
-            docker images
             docker run -d -p 8083:8080 --rm --name ${env.DOCKER_IMAGE_NAME}-test ${env.DOCKER_IMAGE_NAME}:latest
             sleep 15
             curl -s -m 3 GET http://j10s001.p.ssafy.io:8083

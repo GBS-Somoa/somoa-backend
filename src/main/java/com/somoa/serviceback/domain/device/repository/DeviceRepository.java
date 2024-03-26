@@ -10,8 +10,6 @@ import com.somoa.serviceback.domain.device.entity.Device;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.Optional;
-
 public interface DeviceRepository extends ReactiveCrudRepository<Device, String> {
 
     @Modifying
