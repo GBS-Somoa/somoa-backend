@@ -184,7 +184,7 @@ public class DeviceService {
                                 .switchIfEmpty(Mono.error(new IllegalArgumentException("사용자에게 권한이 없습니다.")))
                                 .flatMap(groupUser -> {
                                     if (!groupUser.getRole().equals(GroupUserRole.USER_ONLY_SUPPLY_MANAGE)) {
-                                        return deleteDeviceSupply(device.getId())
+                                        return deleteDeviceSupplies(device.getId())
                                                 .then(deviceRepository.delete(device)
                                                         .then(Mono.just(deviceId)));
 
@@ -194,8 +194,19 @@ public class DeviceService {
                                 })));
     }
 
-    private Mono<Void> deleteDeviceSupply(String deviceId) {
-        return deviceSupplyRepository.deleteByDeviceId(deviceId)
-                .then(Mono.empty());
+    private Mono<Void> deleteDeviceSupplies(String deviceId) {
+        return deviceSupplyRepository.findAllByDeviceId(deviceId)
+                .flatMap(deviceSupply ->
+                        groupSupplyRepository.existsBySupplyId(deviceSupply.getSupplyId())
+                                .flatMap(exists -> {
+                                    // 그룹으로 관리되는 소모품이 아닐 때는 소모품도 삭제
+                                    if (!exists) {
+                                        return supplyRepository.deleteById(deviceSupply.getSupplyId());
+                                    }
+                                    return Mono.empty();
+                                })
+                                .then(deviceSupplyRepository.deleteById(deviceSupply.getId()))
+                )
+                .then();
     }
 }
