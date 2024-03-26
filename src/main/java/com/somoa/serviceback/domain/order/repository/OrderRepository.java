@@ -9,7 +9,7 @@ import reactor.core.publisher.Mono;
 
 public interface OrderRepository extends ReactiveCrudRepository<Order, Integer> {
 
-    Mono<Order> findByOrderStoreId(String orderStoreId);
+    Mono<Order> findByOrderStoreIdAndOrderStore(String orderStoreId, String orderStore);
 
     Flux<Order> findAllByGroupId(Integer groupId);
 }

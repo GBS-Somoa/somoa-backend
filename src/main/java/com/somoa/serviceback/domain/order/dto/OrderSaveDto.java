@@ -6,7 +6,7 @@ import lombok.Data;
 public class OrderSaveDto {
 
     private Integer groupId;
-    private Integer supplyId;
+    private String supplyId;
     private String orderStatus;
     private String productName;
     private String orderStore;

@@ -10,7 +10,7 @@ import lombok.Data;
 public class OrderResponse {
 
 	private Integer orderId;
-	private Integer supplyId;
+	private String supplyId;
 	private String orderStatus;
 	private String orderStore;
 	private String orderStoreId;

@@ -81,14 +81,14 @@ pipeline {
       }
 
 
-      // docker test run!
+      // docker test run
       stage('Docker Test Run') {
          when { expression { env.GIT_BRANCH == 'origin/master' || env.GIT_BRANCH == 'origin/develop'} }
          steps {
             sh """
             docker run -d -p 8083:8080 --rm --name ${env.DOCKER_IMAGE_NAME}-test ${env.DOCKER_IMAGE_NAME}:latest
             sleep 15
-            curl -s -m 3 GET http://j10s001.p.ssafy.io:8083
+            curl -s -m 3 GET http://j10s001.p.ssafy.io:8083/api/test
             """
          }
          post {

@@ -68,9 +68,10 @@ public class SecurityConfig {
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers(HttpMethod.OPTIONS).permitAll()
                         .pathMatchers(HttpMethod.POST, "/orders").permitAll()
-                        .pathMatchers(HttpMethod.PATCH, "/orders/{order_id}/*").permitAll()
+                        .pathMatchers(HttpMethod.PATCH, "/orders/{order_store}/{order_id}").permitAll()
                         .pathMatchers(HttpMethod.POST,"/devices/{device_id}").permitAll()
                         .pathMatchers("/user/login", "/user/refresh","/user/signup").permitAll()
+                        .pathMatchers("/test").permitAll()
                         .pathMatchers("/**").authenticated()
                 )
                 .httpBasic(httpBasic -> httpBasic.disable()) // HTTP 기본 인증 비활성화
