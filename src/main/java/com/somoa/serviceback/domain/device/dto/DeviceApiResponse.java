@@ -1,16 +1,16 @@
 package com.somoa.serviceback.domain.device.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.somoa.serviceback.domain.device.entity.DeviceType;
 import com.somoa.serviceback.domain.supply.dto.SupplyRegisterParam;
 import lombok.Builder;
 import lombok.Data;
 
 import java.util.List;
+import java.util.Set;
 
 @Data
 @Builder
-public class DeviceExternalApiResponse {
+public class DeviceApiResponse {
 
     @JsonProperty("deviceModel")
     private String model;

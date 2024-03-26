@@ -12,5 +12,4 @@ public class DeviceRegisterParam {
     private Integer groupId;
     private String code;
     private String nickname;
-    private List<SupplyRegisterParam> supplies = new ArrayList<>();
 }

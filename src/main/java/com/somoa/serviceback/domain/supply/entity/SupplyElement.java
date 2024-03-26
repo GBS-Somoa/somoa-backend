@@ -1,5 +1,10 @@
 package com.somoa.serviceback.domain.supply.entity;
 
+import reactor.core.publisher.Mono;
+
+import java.sql.Timestamp;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 
 public class SupplyElement {
@@ -10,17 +15,31 @@ public class SupplyElement {
     public static final String AMOUNT = "supplyAmount";
     public static final String AMOUNT_TMP = "supplyAmountTmp";
 
-    public static boolean isValidType(String name, String value) {
-        if (name.equals(LIMIT)) return true;
-        if (name.equals(CHANGE_DATE)) return true;
-        if (name.equals(STATUS))  return true;
-        return false;
+    public static final HashSet<String> supplyElementSet = new HashSet<String>() {{
+        add(LIMIT);
+        add(CHANGE_DATE);
+        add(STATUS);
+        add(AMOUNT);
+        add(AMOUNT_TMP);
+    }};
+
+    public static Object getDefaultValue(String name, String type) {
+        switch (name) {
+            case LIMIT:
+                return SupplyType.getDefaultLimit(type);
+            case AMOUNT:
+            case AMOUNT_TMP:
+                return 0;
+            case CHANGE_DATE:
+                return LocalDateTime.now().plusHours(9);
+            case STATUS:
+                return FilterStatus.GOOD;
+        }
+
+        throw new IllegalArgumentException("유효하지 않은 소모품 타입입니다 : " + name);
     }
 
-    public static boolean isValidType(String name, Integer value) {
-        if (name.equals(LIMIT)) return true;
-        if (name.equals(AMOUNT)) return true;
-        if (name.equals(AMOUNT_TMP)) return true;
-        return false;
+    public static boolean isValidElement(String name) {
+        return supplyElementSet.contains(name);
     }
 }
