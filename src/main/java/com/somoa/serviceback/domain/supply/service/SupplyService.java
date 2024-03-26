@@ -40,8 +40,6 @@ public class SupplyService {
                     if (!conditionMet &&supply.getDetails().containsKey("supplyChangeDate")) {
                         Instant changeDateLimit = Instant.now().minusSeconds(((Integer) supply.getSupplyLimit().get("supplyChangeDate")) * 86400); // 일수를 초로 변환
                         Instant changeDate = ((Date) supply.getDetails().get("supplyChangeDate")).toInstant(); // 교체날짜
-                        System.out.println(changeDateLimit);
-                        System.out.println(changeDate);
                         conditionMet = changeDate.isBefore(changeDateLimit);
                     }
                     if (!conditionMet &&supply.getDetails().containsKey("supplyStatus")) {
