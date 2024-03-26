@@ -12,6 +12,7 @@ import com.somoa.serviceback.domain.supply.entity.*;
 import com.somoa.serviceback.domain.supply.repository.DeviceSupplyRepository;
 import com.somoa.serviceback.domain.supply.repository.GroupSupplyRepository;
 import com.somoa.serviceback.domain.supply.repository.SupplyRepository;
+import com.somoa.serviceback.global.config.PropertiesConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,8 +36,7 @@ public class DeviceService {
     private final SupplyRepository supplyRepository;
     private final DeviceSupplyRepository deviceSupplyRepository;
     private final GroupSupplyRepository groupSupplyRepository;
-
-    private final String MANUFACTURER_SERVER_URL = "http://localhost:3000";
+    private final PropertiesConfig propertiesConfig;
     private final String DEVICE_API_PATH = "/api/device";
     private final String DEVICE_ID_QUERY_PARAM = "device_id";
 
@@ -75,23 +77,29 @@ public class DeviceService {
         }
 
         Map<String, Object> details = new HashMap<>();
-        // 소모품 요소 유효성 검사 및 초기값 설정
-        for (String element : param.getDetails()) {
-            if (!SupplyElement.isValidElement(element)) {
-                return Mono.error(new IllegalArgumentException("유효하지 않은 소모품 요소입니다 : " + element));
+        Map<String, Object> supplyLimit = new HashMap<>();
+        for (String detail : param.getDetails()) {
+            switch (detail) {
+                case "supplyAmount":
+                    details.put("supplyAmount", 0);
+                    supplyLimit.put("supplyAmount", 0); // 기본값 0 -> 알람안뜨게설정
+                    break;
+                case "supplyStatus":
+                    details.put("supplyStatus", "good"); // 기본값 "good"
+                    supplyLimit.put("supplyStatus", "null"); // 기본값 "null" -> 알람안뜨게설정
+                    break;
+                case "supplyChangeDate":
+                    details.put("supplyChangeDate",Instant.now());
+                    supplyLimit.put("supplyChangeDate", 365); // 기본값 365일
+                    break;
             }
-            if (element.equals(SupplyElement.AMOUNT)) {
-                details.put(SupplyElement.AMOUNT_TMP, SupplyElement.getDefaultValue(SupplyElement.AMOUNT_TMP, param.getType()));
-            }
-            details.put(element, SupplyElement.getDefaultValue(element, param.getType()));
         }
-        // 알림 기준 초기값 설정
-        details.put(SupplyElement.LIMIT, SupplyElement.getDefaultValue(SupplyElement.LIMIT, param.getType()));
 
         Supply newSupply = Supply.builder()
                 .type(param.getType())
                 .name(param.getName())
-                .details(details)
+                .details(details) // 기존 디테일 셋팅 로직을 따름
+                .supplyLimit(supplyLimit) // 새로 추가된 부분
                 .build();
 
         // 액체류 소모품이 아닐 때 (그룹으로 관리되지 않음)
@@ -128,7 +136,7 @@ public class DeviceService {
     }
 
     private Mono<DeviceApiResponse> getDeviceResponse(String deviceId) {
-        WebClient webClient = WebClient.create(MANUFACTURER_SERVER_URL);
+        WebClient webClient = WebClient.create(propertiesConfig.getManufacturerServerUrl());
 
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder.path(DEVICE_API_PATH)
@@ -208,4 +216,24 @@ public class DeviceService {
                 )
                 .then(deviceSupplyRepository.deleteAllByDeviceId(deviceId));
     }
+
+    /**
+     * Todo: 기기-테스트앱 연결해서 진행 + fcm groupId기반 메서드 제대로 생성 후 작업
+     * @param deviceId
+     * @param deviceStatusDto
+     * @return
+
+    public Mono<DeviceStatusDto> StatusUpdate(String deviceId, DeviceStatusDto deviceStatusDto) {
+        // deviceId를 사용하여 DeviceSupplies에서 모든 suppliesId 찾기
+        return deviceSupplyRepository.findAllByDeviceId(deviceId)
+                //.flatMap(deviceSupplies ->
+                        // 각 suppliesId에 대한 Supplies 정보 업데이트
+                        //suppliesRepository.findById(deviceSupplies.getSuppliesId())
+                                //.flatMap(supplies -> updateSupplies(supplies, deviceStatusDto))
+                           //     .then(Mono.just(deviceSupplies))
+               // )
+                .collectList()
+                .flatMap(deviceSuppliesList -> Mono.just(deviceStatusDto));
+    }
+     */
 }

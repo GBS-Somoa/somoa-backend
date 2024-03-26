@@ -5,7 +5,8 @@ import com.somoa.serviceback.domain.user.entity.User;
 import com.somoa.serviceback.domain.user.repository.UserRepository;
 import com.somoa.serviceback.global.auth.JwtService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -17,26 +18,31 @@ import java.util.Map;
 public class UserService {
 
     private final UserRepository userRepository;
-    private final ReactiveUserDetailsService users;
     private final JwtService jwtService;
 
 
 
-    public Mono<Map<String, String>> loginUser(String username, String password) {
-        return users.findByUsername(username)
-                .flatMap(userDetails -> {
-
-                    if (password.equals(userDetails.getPassword())) {
+    public Mono<Map<String, Object>> loginUser(String username, String password) {
+        // UserRepository를 사용하여 사용자 인증 진행
+        return userRepository.findByUsername(username)
+                .flatMap(user -> {
+                    if (password.equals(user.getPassword())) {
                         // 비밀번호가 일치하는 경우, 토큰 생성
-                        return jwtService.generateTokens(userDetails.getUsername());
+                        return jwtService.generateTokens(user.getUsername())
+                                .map(tokens -> {
+                                    Map<String, Object> response = new HashMap<>();
+                                    response.put("tokens", tokens);
+                                    response.put("userId", user.getId());
+                                    response.put("nickname", user.getNickname());
+                                    return response;
+                                });
                     } else {
                         // 비밀번호가 일치하지 않는 경우, 에러 반환
-                        return Mono.error(new IllegalArgumentException("Invalid username or password"));
+                        return Mono.error(new BadCredentialsException("Invalid username or password"));
                     }
                 })
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("User not found"))); // 사용자가 없는 경우 에러 반환
+                .switchIfEmpty(Mono.error(new UsernameNotFoundException("User not found")));
     }
-
     public Mono<Map<String, String>> refreshAccessToken(String refreshToken) {
         if (!jwtService.validateRefreshToken(refreshToken)) {
             return Mono.error(new IllegalArgumentException("Invalid or expired refresh token"));

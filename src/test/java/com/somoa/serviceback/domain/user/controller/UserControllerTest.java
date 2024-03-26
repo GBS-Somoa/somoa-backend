@@ -1,4 +1,4 @@
-package com.somoa.serviceback;
+package com.somoa.serviceback.domain.user.controller;
 
 
 import com.somoa.serviceback.domain.user.dto.UserLoginDto;
@@ -44,7 +44,7 @@ class UserControllerTest {
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.status").isEqualTo(200);
-                return userSignupDto;
+        return userSignupDto;
     }
 
     void login(UserLoginDto userLoginDto) {
@@ -131,7 +131,7 @@ class UserControllerTest {
         }
 
         @Test
-        @DisplayName("[POST] 토큰 갱신 성공")
+        @DisplayName("토큰 갱신 성공")
         void refreshTokenSuccess() {
 
 
@@ -155,7 +155,7 @@ class UserControllerTest {
 
         }
         @Test
-        @DisplayName("[POST] 토큰 갱신 실패- 엑세스토큰이용")
+        @DisplayName("토큰 갱신 실패- 엑세스토큰이용")
         void refreshTokenToAccessTokenFail() {
             // 엑세스 토큰을 사용하여 토큰 갱신
             webTestClient.get().uri("/user/refresh")
