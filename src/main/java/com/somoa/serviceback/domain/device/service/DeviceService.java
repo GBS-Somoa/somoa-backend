@@ -8,6 +8,7 @@ import com.somoa.serviceback.domain.group.entity.GroupUserRole;
 import com.somoa.serviceback.domain.group.repository.GroupUserRepository;
 import com.somoa.serviceback.domain.supply.dto.SupplyRegisterParam;
 import com.somoa.serviceback.domain.supply.dto.SupplyResponse;
+import com.somoa.serviceback.domain.supply.dto.SupplyStatusParam;
 import com.somoa.serviceback.domain.supply.entity.*;
 import com.somoa.serviceback.domain.supply.repository.DeviceSupplyRepository;
 import com.somoa.serviceback.domain.supply.repository.GroupSupplyRepository;
@@ -24,6 +25,7 @@ import reactor.core.publisher.Mono;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -85,12 +87,21 @@ public class DeviceService {
                     supplyLimit.put("supplyAmount", 0); // 기본값 0 -> 알람안뜨게설정
                     break;
                 case "supplyStatus":
-                    details.put("supplyStatus", "good"); // 기본값 "good"
-                    supplyLimit.put("supplyStatus", "null"); // 기본값 "null" -> 알람안뜨게설정
-                    break;
+                    if(param.getDetails().contains("supplyChangeDate")) { // 필터류 상태
+                        details.put("supplyStatus", "good"); // 기본값 "good"
+                        supplyLimit.put("supplyStatus", "null"); // 기본값 "null" -> 알람안뜨게설정
+                    }else{ // 단일 소모품 상태(봉투 등)
+                        details.put("supplyStatus", 10); // 기본값 "good"
+                        supplyLimit.put("supplyStatus", 0); // 기본값 "null" -> 알람안뜨게설정
+                    }
+                        break;
                 case "supplyChangeDate":
                     details.put("supplyChangeDate",Instant.now());
                     supplyLimit.put("supplyChangeDate", 365); // 기본값 365일
+                    break;
+                case "supplyLevel":
+                    details.put("supplyLevel", 100);
+                    supplyLimit.put("supplyLevel", 0); // 기본값 0 -> 알람안뜨게설정
                     break;
             }
         }
@@ -220,12 +231,62 @@ public class DeviceService {
     /**
      * Todo: 기기-테스트앱 연결해서 진행 + fcm groupId기반 메서드 제대로 생성 후 작업
      * @param deviceId
-     * @param deviceStatusDto
+     * @param deviceApiStatusResponse
      * @return
     */
-    public Mono<Void> StatusUpdate(String deviceId, DeviceApiStatusResponse deviceApiStatusResponse) {
-        // deviceId를 사용하여 DeviceSupplies에서 모든 suppliesId 찾기
-        return deviceSupplyRepository.findAllByDeviceId(deviceId).then();
+    public Mono<Void> statusUpdate(String deviceId, DeviceApiStatusResponse deviceApiStatusResponse) {
+        return deviceSupplyRepository.findAllSupplyIdByDeviceId(deviceId)
+                .collectList()
+                .flatMapMany(Flux::fromIterable)
+                .flatMap(supplyId ->
+                        updateSupplyDetails(supplyId.toString(), deviceApiStatusResponse.getSupplies())
+                ).then();
+    }
+
+    private Mono<Void> updateSupplyDetails(String supplyId, List<SupplyStatusParam> supplyStatusParams) {
+        return supplyRepository.findById(supplyId)
+                .flatMap(supply -> Flux.fromIterable(supplyStatusParams)
+                        .filter(param -> supply.getName().equals(param.getName()) && supply.getType().equals(param.getType()))
+                        .next() // 첫 번째 일치하는 요소를 가져옴
+                        .flatMap(param -> updateSupply(supply, param)) // 비동기적으로 updateSupply 실행
+                        .flatMap(updatedSupply -> supplyRepository.save(updatedSupply)) // 업데이트된 Supply 저장
+                        .then() // 완료 신호만 전달
+                );
+    }
+
+
+    private Mono<Supply> updateSupply(Supply supply, SupplyStatusParam param) {
+        return Mono.fromCallable(() -> {
+            for (int i = 0; i < param.getDetails().size(); i++) {
+                String detailKey = param.getDetails().get(i);
+                String newValue = param.getValues().get(i);
+                System.out.println(detailKey + "_" + newValue);
+                if ("supplyAmount".equals(detailKey)) {
+                    if (newValue != null && !newValue.isEmpty()) {
+                        try {
+                            System.out.println(newValue);
+                            Integer newAmount = Integer.parseInt(newValue);
+                            Integer currentAmount = (Integer) supply.getDetails().getOrDefault(detailKey, 0);
+                            Integer updatedAmount = currentAmount - newAmount;
+                            if (updatedAmount < 0) {
+                                throw new IllegalArgumentException("Updated supply amount cannot be less than 0.");
+                            }
+                            supply.getDetails().put(detailKey, updatedAmount);
+                        } catch (NumberFormatException e) {
+                            throw new IllegalArgumentException("Invalid format for supplyAmount: " + newValue, e);
+                        }
+                    } else {
+                        // 빈 문자열 또는 null 값에 대한 처리 (예외 던지기 또는 로그 남기기)
+                        System.out.println("Invalid or empty supply amount value.");
+                    }
+                } else {
+                    if (newValue != null && !newValue.isEmpty()) {
+                        supply.getDetails().put(detailKey, newValue);
+                    }
+                }
+            }
+            return supply;
+        }).onErrorMap(NumberFormatException.class, e -> new IllegalArgumentException("Invalid format for supplyAmount", e));
     }
 
 }

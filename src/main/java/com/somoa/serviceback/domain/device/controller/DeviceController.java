@@ -66,13 +66,13 @@ public class DeviceController {
      * 기기상태 업데이트 및 알람주기
      * 기기id를 받아와서, 해당 기기의 소모품들을 가져와서, 상태 업데이트 시키고, 기준치 이하일 경우 알람주기
      * @param device_id
-     * @param DeviceApiStatusResponse
+     * @param deviceApiStatusResponse
      * @return
     */
     @PostMapping("/{device_id}")
     public Mono<ResponseEntity<ResponseHandler>> handleDeviceStatus(@PathVariable String device_id, @RequestBody DeviceApiStatusResponse deviceApiStatusResponse) {
         System.out.println(deviceApiStatusResponse.toString());
-        return deviceService.StatusUpdate(device_id, deviceApiStatusResponse)
+        return deviceService.statusUpdate(device_id, deviceApiStatusResponse)
                 .flatMap(data -> ResponseHandler.ok(data, "기기 상태를 업데이트했습니다."))
                 .onErrorResume(error -> {
                     log.error("에러발생", error);

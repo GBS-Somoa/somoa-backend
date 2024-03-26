@@ -14,4 +14,7 @@ public interface DeviceSupplyRepository extends ReactiveCrudRepository<DeviceSup
     Mono<Void> deleteAllByDeviceId(String deviceId);
 
     Flux<DeviceSupply> findAllByDeviceId(String deviceId);
+
+    @Query("SELECT supply_id FROM device_supply WHERE device_id = :deviceId")
+    Flux<String> findAllSupplyIdByDeviceId(String deviceId);
 }
