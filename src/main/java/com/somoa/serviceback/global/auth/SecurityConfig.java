@@ -47,7 +47,7 @@ public class SecurityConfig {
         return http
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers(HttpMethod.POST, "/orders").permitAll()
-                        .pathMatchers(HttpMethod.PATCH, "/orders/{order_id}").permitAll()
+                        .pathMatchers(HttpMethod.PATCH, "/orders/{order_id}/{order_store}").permitAll()
                         .pathMatchers(HttpMethod.POST,"/devices/{device_id}").permitAll()
                         .pathMatchers("/user/login", "/user/refresh","/user/signup").permitAll()
                         .pathMatchers("/**").authenticated()
