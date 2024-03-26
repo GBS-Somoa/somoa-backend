@@ -1,5 +1,6 @@
 package com.somoa.serviceback.domain.device.controller;
 
+import com.somoa.serviceback.domain.device.dto.DeviceApiStatusResponse;
 import com.somoa.serviceback.domain.device.dto.DeviceUpdateParam;
 import com.somoa.serviceback.domain.device.exception.DeviceNotFoundException;
 import com.somoa.serviceback.domain.device.dto.DeviceRegisterParam;
@@ -67,16 +68,16 @@ public class DeviceController {
      * @param device_id
      * @param deviceStatusDto
      * @return
-    
+    */
     @PostMapping("/{device_id}")
-    public Mono<ResponseEntity<ResponseHandler>> handleDeviceStatus(@PathVariable String device_id, @RequestBody DeviceStatusDto deviceStatusDto) {
-        System.out.println(deviceStatusDto.toString());
-        return deviceService.StatusUpdate(device_id, deviceStatusDto)
+    public Mono<ResponseEntity<ResponseHandler>> handleDeviceStatus(@PathVariable String device_id, @RequestBody DeviceApiStatusResponse deviceApiStatusResponse) {
+        System.out.println(deviceApiStatusResponse.toString());
+        return deviceService.StatusUpdate(device_id, deviceApiStatusResponse)
                 .flatMap(data -> ResponseHandler.ok(data, "기기 상태를 업데이트했습니다."))
                 .onErrorResume(error -> {
                     log.error("에러발생", error);
                     return ResponseHandler.error("internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
                 });
     }
-     */
+
 }
