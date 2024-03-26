@@ -1,5 +1,6 @@
 package com.somoa.serviceback.global.auth;
 
+import com.somoa.serviceback.global.config.PropertiesConfig;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.JwtParser;
@@ -22,15 +23,17 @@ import java.util.Map;
 @Service
 public class JwtService {
 
+    final private PropertiesConfig propertiesConfig;
 
     final private SecretKey accessKey;
     final private SecretKey refreshKey;
 
     final private JwtParser parser;
     final private JwtParser refreshparser;
-    public JwtService(){
-        this.accessKey = Keys.hmacShaKeyFor("clzlsvlwkgoaqjrjdusdjdbrghlthrhrltkaruqtkf".getBytes());
-        this.refreshKey = Keys.hmacShaKeyFor("rhemddjghldusdjghldbrghlckaclghldbrtktlal".getBytes());
+    public JwtService(PropertiesConfig propertiesConfig){
+        this.propertiesConfig = propertiesConfig;
+        this.accessKey = Keys.hmacShaKeyFor(propertiesConfig.getAccessKey().getBytes());
+        this.refreshKey = Keys.hmacShaKeyFor(propertiesConfig.getRefreshKey().getBytes());
         this.parser = Jwts.parserBuilder().setSigningKey(this.accessKey).build();
         this.refreshparser=Jwts.parserBuilder().setSigningKey(this.refreshKey).build();
     }

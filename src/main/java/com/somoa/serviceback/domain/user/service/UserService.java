@@ -33,6 +33,7 @@ public class UserService {
                                     Map<String, Object> response = new HashMap<>();
                                     response.put("tokens", tokens);
                                     response.put("userId", user.getId());
+                                    response.put("nickname", user.getNickname());
                                     return response;
                                 });
                     } else {
