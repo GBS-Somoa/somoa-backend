@@ -50,6 +50,7 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.PATCH, "/orders/{order_id}/{order_store}").permitAll()
                         .pathMatchers(HttpMethod.POST,"/devices/{device_id}").permitAll()
                         .pathMatchers("/user/login", "/user/refresh","/user/signup").permitAll()
+                        .pathMatchers("/test").permitAll()
                         .pathMatchers("/**").authenticated()
                 )
                 .httpBasic(httpBasic -> httpBasic.disable()) // HTTP 기본 인증 비활성화
