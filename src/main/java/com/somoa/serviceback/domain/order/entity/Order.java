@@ -24,7 +24,7 @@ public class Order {
     private int groupId;
 
     @Column("supply_id")
-    private int supplyId;
+    private String supplyId;
 
     @Column("order_status")
     private String orderStatus;
