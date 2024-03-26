@@ -25,4 +25,7 @@ public interface DeviceRepository extends ReactiveCrudRepository<Device, String>
     Mono<Group> findGroupByDeviceId(String deviceId);
 
     Flux<Device> findAllByGroupId(Integer groupId);
+
+    @Query("SELECT d.group_id FROM device d WHERE d.device_id = :deviceId")
+    Mono<String> findGroupIdByDeviceId(String deviceId);
 }
