@@ -16,6 +16,10 @@ import org.springframework.security.web.server.authentication.AuthenticationWebF
 import org.springframework.security.web.server.util.matcher.NegatedServerWebExchangeMatcher;
 import org.springframework.security.web.server.util.matcher.OrServerWebExchangeMatcher;
 import org.springframework.security.web.server.util.matcher.PathPatternParserServerWebExchangeMatcher;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.reactive.CorsConfigurationSource;
+import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
+import org.springframework.web.util.pattern.PathPatternParser;
 import reactor.core.publisher.Mono;
 
 
@@ -25,6 +29,22 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public class SecurityConfig {
     private final UserRepository userRepository;
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowCredentials(true); // 자격 증명(쿠키, HTTP 인증 등)을 허용
+        // 모든 출처를 허용하는 대신 패턴 사용
+        config.addAllowedOriginPattern("*");
+        config.addAllowedMethod("*");
+        config.addAllowedHeader("*"); // 모든 헤더 허용
+        config.setAllowCredentials(true); // 쿠키, 인증과 관련된 헤더 등을 허용
+        //config.setMaxAge(3600L); // pre-flight 요청의 최대 캐시 시간 (초)
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource(new PathPatternParser());
+        source.registerCorsConfiguration("/**", config); // 모든 경로에 대해 해당 설정 적용
+        return source;
+    }
 
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(
@@ -46,6 +66,7 @@ public class SecurityConfig {
 
         return http
                 .authorizeExchange(exchanges -> exchanges
+                        .pathMatchers(HttpMethod.OPTIONS).permitAll()
                         .pathMatchers(HttpMethod.POST, "/orders").permitAll()
                         .pathMatchers(HttpMethod.PATCH, "/orders/{order_id}/*").permitAll()
                         .pathMatchers(HttpMethod.POST,"/devices/{device_id}").permitAll()
@@ -55,6 +76,7 @@ public class SecurityConfig {
                 .httpBasic(httpBasic -> httpBasic.disable()) // HTTP 기본 인증 비활성화
                 .formLogin(formLogin -> formLogin.disable()) // 폼 로그인을 비활성화
                 .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .addFilterAt(jwtFilter, SecurityWebFiltersOrder.AUTHENTICATION)
                 .exceptionHandling(authenticationManager -> authenticationManager
                         .authenticationEntryPoint(new CustomAuthenticationEntryPoint(new ObjectMapper())))
