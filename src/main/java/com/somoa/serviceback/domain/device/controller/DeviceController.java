@@ -66,7 +66,7 @@ public class DeviceController {
      * 기기상태 업데이트 및 알람주기
      * 기기id를 받아와서, 해당 기기의 소모품들을 가져와서, 상태 업데이트 시키고, 기준치 이하일 경우 알람주기
      * @param device_id
-     * @param deviceStatusDto
+     * @param DeviceApiStatusResponse
      * @return
     */
     @PostMapping("/{device_id}")

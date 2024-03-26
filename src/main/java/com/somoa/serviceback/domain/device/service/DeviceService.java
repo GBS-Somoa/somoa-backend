@@ -223,17 +223,9 @@ public class DeviceService {
      * @param deviceStatusDto
      * @return
     */
-    public Mono<DeviceStatusDto> StatusUpdate(String deviceId, DeviceStatusDto deviceStatusDto) {
+    public Mono<Void> StatusUpdate(String deviceId, DeviceApiStatusResponse deviceApiStatusResponse) {
         // deviceId를 사용하여 DeviceSupplies에서 모든 suppliesId 찾기
-        return deviceSupplyRepository.findAllByDeviceId(deviceId)
-                //.flatMap(deviceSupplies ->
-                        // 각 suppliesId에 대한 Supplies 정보 업데이트
-                        //suppliesRepository.findById(deviceSupplies.getSuppliesId())
-                                //.flatMap(supplies -> updateSupplies(supplies, deviceStatusDto))
-                           //     .then(Mono.just(deviceSupplies))
-               // )
-                .collectList()
-                .flatMap(deviceSuppliesList -> Mono.just(deviceStatusDto));
+        return deviceSupplyRepository.findAllByDeviceId(deviceId).then();
     }
 
 }
