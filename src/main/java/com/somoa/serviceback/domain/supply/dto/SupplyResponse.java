@@ -15,7 +15,7 @@ public class SupplyResponse {
     private String type;
     private String name;
     private Map<String, Object> details;
-    private Map<String,Object> Limit;
+    private Map<String,Object> limit;
 
     public static SupplyResponse of(Supply supply) {
         return SupplyResponse.builder()
@@ -23,7 +23,7 @@ public class SupplyResponse {
                 .type(supply.getType())
                 .name(supply.getName())
                 .details(supply.getDetails())
-                .Limit(supply.getSupplyLimit())
+                .limit(supply.getSupplyLimit())
                 .build();
     }
 }
