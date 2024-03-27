@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
@@ -25,34 +26,12 @@ public class SupplyService {
     private final DeviceSupplyRepository deviceSupplyRepository;
     private final SupplyRepository supplyRepository;
 
-    /**
-     * Todo: 로직  정리필요. 추후 DeviceController에서도 사용예정
-     * @param groupId
-     * @param careRequired
-     * @return
-     */
     public Flux<Object> searchSupply(Integer groupId, Boolean careRequired) {
-        return deviceRepository.findAllByGroupId(groupId)
-                .flatMap(device -> deviceSupplyRepository.findSupplyIdsByDeviceId(device.getId()))
+        return deviceSupplyRepository.findDistinctSupplyIdsByGroupId(groupId)
                 .flatMap(supplyId -> supplyRepository.findById(supplyId))
                 .filter(supply -> {
-                    boolean conditionMet = false; // 조건을 만족하는지 여부를 저장할 변수
-                    if (!conditionMet &&supply.getDetails().containsKey("supplyChangeDate")) {
-                        Instant changeDateLimit = Instant.now().minusSeconds(((Integer) supply.getSupplyLimit().get("supplyChangeDate")) * 86400); // 일수를 초로 변환
-                        Instant changeDate = ((Date) supply.getDetails().get("supplyChangeDate")).toInstant(); // 교체날짜
-                        conditionMet = changeDate.isBefore(changeDateLimit);
-                    }
-                    if (!conditionMet &&supply.getDetails().containsKey("supplyStatus")) {
-                        int status = FilterStatus.statusToNumber((String) supply.getDetails().get("supplyStatus"));
-                        int limitStatus = FilterStatus.statusToNumber((String) supply.getSupplyLimit().get("supplyStatus"));
-                        conditionMet = (limitStatus > status && limitStatus != 0);
-                    }
-                    if (!conditionMet &&supply.getDetails().containsKey("supplyAmount")) {
-                        Integer amount = (Integer) supply.getDetails().get("supplyAmount");
-                        Integer limitAmount = (Integer) supply.getSupplyLimit().get("supplyAmount");
-                        conditionMet = (amount <= limitAmount && limitAmount!=0);
-                    }
-                    return careRequired ? conditionMet : !conditionMet; // careRequired가 true면 조건 만족 시, false면 조건 불만족 시 항목 포함
+                    boolean conditionMet = isCareNeeded(supply);
+                    return careRequired ? conditionMet : !conditionMet;
                 })
                 .index()
                 .map(indexedTuple -> {
@@ -76,5 +55,51 @@ public class SupplyService {
                     }
                 })
                 .defaultIfEmpty(false);
+    }
+
+    public static boolean isCareNeeded(Supply supply) {
+        Map<String, Object> details = supply.getDetails();
+        Map<String, Object> limits = supply.getSupplyLimit();
+
+        for (Map.Entry<String, Object> entry : limits.entrySet()) {
+            String key = entry.getKey();
+            Object limitValue = entry.getValue();
+            Object detailValue = details.get(key);
+            // 날짜 비교
+            if ("supplyChangeDate".equals(key)) {
+                // detailValue가 Date 인스턴스인 경우, toInstant() 메소드로 변환
+                if (detailValue instanceof Date) {
+                    Instant detailDate = ((Date) detailValue).toInstant();
+                    Instant now = Instant.now();
+                    long daysBetween = Duration.between(detailDate, now).toDays();
+                    if ((int) limitValue > 0 && daysBetween >= (int) limitValue) {
+                        return true;
+                    }
+                } else if (detailValue instanceof Instant) {
+                    // detailValue가 이미 Instant 인스턴스인 경우, 직접 사용
+                    Instant detailDate = (Instant) detailValue;
+                    Instant now = Instant.now();
+                    long daysBetween = Duration.between(detailDate, now).toDays();
+                    if ((int) limitValue > 0 && daysBetween >= (int) limitValue) {
+                        return true;
+                    }
+                }
+            }
+            // 상태 비교
+            else if ("supplyStatus".equals(key)) {
+                int detailStatusValue = FilterStatus.statusToNumber(detailValue);
+                int limitStatusValue = FilterStatus.statusToNumber(limitValue);
+                if (detailStatusValue < limitStatusValue && limitStatusValue > 0) {
+                    return true;
+                }
+            }
+            // 수량 비교
+            else if ("supplyAmount".equals(key) && detailValue instanceof Integer && limitValue instanceof Integer) {
+                if ((int) detailValue <= (int) limitValue && (int) limitValue != 0) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }
