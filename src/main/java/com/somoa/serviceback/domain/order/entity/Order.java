@@ -9,6 +9,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.sql.Timestamp;
+
 @Table("`order`")
 @Builder
 @Data
@@ -46,4 +48,10 @@ public class Order {
 
     @Column("order_amount")
     private String orderAmount;
+
+    @Column("created_at")
+    private Timestamp createdAt;
+
+    @Column("updated_at")
+    private Timestamp updatedAt;
 }
