@@ -1,5 +1,6 @@
 package com.somoa.serviceback.domain.supply.entity;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -18,13 +19,25 @@ public class SupplyType {
     private static final Map<String, Object> defaultLimits = new HashMap<>() {{
         put(REPLACEABLE_FILTER, 365);
         put(CLEANABLE_FILTER, FilterStatus.BAD);
-        put(SUPPLY_TANK, 2);
-        put(DRAIN_TANK, 8);
+        put(SUPPLY_TANK, 10);
+        put(DRAIN_TANK, 90);
         put(DUST_BIN, 8);
         put(WASHER_DETERGENT, 100);
         put(DISH_DETERGENT, 100);
         put(FABRIC_SOFTENER, 100);
         put(DISH_RINSE, 100);
+    }};
+
+    private static final Map<String, Object> defaultDetails = new HashMap<>() {{
+        put(REPLACEABLE_FILTER, Instant.now());
+        put(CLEANABLE_FILTER, FilterStatus.GOOD);
+        put(SUPPLY_TANK, 0);
+        put(DRAIN_TANK, 100);
+        put(DUST_BIN, 10);
+        put(WASHER_DETERGENT, 0);
+        put(DISH_DETERGENT, 0);
+        put(FABRIC_SOFTENER, 0);
+        put(DISH_RINSE, 0);
     }};
 
     private static final String[] supplyTypes = {
@@ -38,6 +51,9 @@ public class SupplyType {
 
     public static Object getDefaultLimit(String type) {
         return defaultLimits.get(type);
+    }
+    public static Object getDefaultDetail(String type) {
+        return defaultDetails.get(type);
     }
 
     public static boolean isLiquidType(String type) {

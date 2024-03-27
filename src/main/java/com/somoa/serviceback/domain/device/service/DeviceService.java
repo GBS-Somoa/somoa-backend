@@ -108,8 +108,8 @@ public class DeviceService {
                     supplyLimit.put("supplyChangeDate", 365); // 기본값 365일
                     break;
                 case "supplyLevel":
-                    details.put("supplyLevel", 100);
-                    supplyLimit.put("supplyLevel", 0); // 기본값 0 -> 알람안뜨게설정
+                    details.put("supplyLevel", SupplyType.getDefaultDetail(param.getType()));
+                    supplyLimit.put("supplyLevel", SupplyType.getDefaultLimit(param.getType()));
                     break;
             }
         }
@@ -300,7 +300,14 @@ public class DeviceService {
                             }
 
                     }
-                } else {
+                }else if ("supplyLevel".equals(detailKey)) {
+                    if (newValue != null && !newValue.isEmpty()) {
+                        int intValue = Integer.parseInt(newValue);
+                        // 변환된 intValue를 맵에 저장
+                        supply.getDetails().put(detailKey, intValue);
+                    }
+                }
+                else {
                     if (newValue != null && !newValue.isEmpty()) {
                         supply.getDetails().put(detailKey, newValue);
                     }

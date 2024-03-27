@@ -98,6 +98,13 @@ public class SupplyService {
                 if ((int) detailValue <= (int) limitValue && (int) limitValue != 0) {
                     return true;
                 }
+            }else if ("supplyLevel".equals(key) && detailValue instanceof Integer && limitValue instanceof Integer) {
+                if(supply.getType().equals("drainTank") && (int) detailValue >= (int) limitValue && (int) limitValue != 0){
+                    return true;
+                }
+                else if(supply.getType().equals("supplyTank") && (int) detailValue <= (int) limitValue && (int) limitValue != 0){
+                    return true;
+                }
             }
         }
         return false;
