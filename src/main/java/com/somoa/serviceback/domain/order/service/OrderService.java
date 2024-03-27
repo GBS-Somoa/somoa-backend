@@ -59,7 +59,9 @@ public class OrderService {
                             .switchIfEmpty(Mono.error(new IllegalArgumentException("소모품을 찾을 수 없습니다.")))
                             .flatMap(supply -> {
                                 int orderAmountInMilliliters = parseOrderAmount(order.getOrderAmount());
-                                supply.setAmountTmp(supply.getAmountTmp() + (order.getOrderCount() * orderAmountInMilliliters));
+                                if(supply.getDetails().containsKey("supplyAmount")) {
+                                    supply.setAmountTmp(supply.getAmountTmp() + (order.getOrderCount() * orderAmountInMilliliters));
+                                }
                                 return supplyRepository.save(supply);
                             })
                             .thenReturn(order);
@@ -87,9 +89,11 @@ public class OrderService {
                         return supplyRepository.findById(order.getSupplyId())
                                 .switchIfEmpty(Mono.error(new IllegalArgumentException("소모품을 찾을 수 없습니다.")))
                                 .flatMap(supply -> {
-                                    Integer amount = (Integer) supply.getDetails().get("supplyAmount");
-                                    supply.getDetails().put("supplyAmount", amount + supply.getAmountTmp());
-                                    supply.setAmountTmp(0);
+                                    if(supply.getDetails().containsKey("supplyAmount")) {
+                                        Integer amount = (Integer) supply.getDetails().get("supplyAmount");
+                                        supply.getDetails().put("supplyAmount", amount + supply.getAmountTmp());
+                                        supply.setAmountTmp(0);
+                                    }
                                     return supplyRepository.save(supply);
                                 })
                                 .thenReturn(order);
@@ -97,7 +101,9 @@ public class OrderService {
                         return supplyRepository.findById(order.getSupplyId())
                                 .switchIfEmpty(Mono.error(new IllegalArgumentException("소모품을 찾을 수 없습니다.")))
                                 .flatMap(supply -> {
-                                    supply.setAmountTmp(0);
+                                    if(supply.getDetails().containsKey("supplyAmount")) {
+                                        supply.setAmountTmp(0);
+                                    }
                                     return supplyRepository.save(supply);
                                 })
                                 .thenReturn(order);
