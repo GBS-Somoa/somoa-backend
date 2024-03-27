@@ -1,6 +1,8 @@
 package com.somoa.serviceback.domain.group.service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -97,6 +99,21 @@ public class GroupUserService extends GroupBaseService {
                     return groupUserRepository.delete(existingGroupUser)
                         .then();
                 }
+            });
+    }
+
+    @Transactional
+    public Mono<Map<String, Object>> toggleAlarm(Integer userId, Integer groupId) {
+        return findGroupUser(groupId, userId)
+            .flatMap(existingGroupUser -> {
+                boolean newAlarmState = !existingGroupUser.isAlarm();
+                existingGroupUser.setAlarm(newAlarmState);
+                return groupUserRepository.save(existingGroupUser)
+                    .map(modifiedUser -> {
+                        Map<String, Object> data = new HashMap<>();
+                        data.put("alarm", newAlarmState);
+                        return data;
+                    });
             });
     }
 }

@@ -105,6 +105,13 @@ public class GroupController {
     public Mono<ResponseEntity<ResponseHandler>> getGroupDevices(@Login Integer loginUserId,
                                                                  @PathVariable("groupId") Integer groupId) {
         return groupDeviceService.getDevices(loginUserId, groupId)
-                .flatMap(data -> ResponseHandler.ok(data, "그룹에 속한 기기 목록을 조회했습니다."));
+            .flatMap(data -> ResponseHandler.ok(data, "그룹에 속한 기기 목록을 조회했습니다."));
+    }
+
+    @PatchMapping("/{groupId}/alarm")
+    public Mono<ResponseEntity<ResponseHandler>> toggleAlarm(@Login Integer loginUserId,
+                                                             @PathVariable("groupId") Integer groupId) {
+        return groupUserService.toggleAlarm(loginUserId, groupId)
+            .flatMap(data -> ResponseHandler.ok(data, "알림 상태를 변경했습니다."));
     }
 }
