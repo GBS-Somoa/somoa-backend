@@ -33,5 +33,5 @@ public class Supply {
 
     // @Builder.Default 어노테이션을 사용하여 기본값 설정
     @Field("supplyAmountTmp")
-    private Integer amountTmp; // 기본값은 0
+    private Integer supplyAmountTmp; // 기본값은 0
 }
