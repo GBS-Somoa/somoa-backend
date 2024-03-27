@@ -17,5 +17,5 @@ public class PropertiesConfig {
 
      private String accessKey;
      private String refreshKey;
-    private String manufacturerServerUrl;
+     private String manufacturerServerUrl;
 }
