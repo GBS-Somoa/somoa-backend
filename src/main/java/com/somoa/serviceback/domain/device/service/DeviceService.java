@@ -51,7 +51,7 @@ public class DeviceService {
     @Transactional
     public Mono<Map<String, Object>> save(DeviceRegisterParam param) {
 
-        Mono<DeviceApiResponse> responseMono = getDeviceResponse(param.getCode());
+        Mono<DeviceApiResponse> responseMono = getDeviceResponse(param.getCode()).cache();
 
         // response data
         Map<String, Object> data = new HashMap<>();
