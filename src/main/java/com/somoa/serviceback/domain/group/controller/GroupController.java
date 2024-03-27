@@ -4,6 +4,7 @@ import com.somoa.serviceback.domain.group.dto.GroupModifyParam;
 import com.somoa.serviceback.domain.group.dto.GroupRegisterParam;
 import com.somoa.serviceback.domain.group.dto.GroupUserRegisterParam;
 import com.somoa.serviceback.domain.group.dto.GroupUserRoleParam;
+import com.somoa.serviceback.domain.group.service.GroupDeviceService;
 import com.somoa.serviceback.domain.group.service.GroupManagementService;
 import com.somoa.serviceback.domain.group.service.GroupOrderService;
 import com.somoa.serviceback.domain.group.service.GroupUserService;
@@ -24,6 +25,7 @@ public class GroupController {
     private final GroupManagementService groupManagementService;
     private final GroupUserService groupUserService;
     private final GroupOrderService groupOrderService;
+    private final GroupDeviceService groupDeviceService;
 
     @PostMapping
     public Mono<ResponseEntity<ResponseHandler>> create(@Login Integer loginUserId,
@@ -96,6 +98,13 @@ public class GroupController {
     public Mono<ResponseEntity<ResponseHandler>> getGroupOrders(@Login Integer loginUserId,
                                                                 @PathVariable("groupId") Integer groupId) {
         return groupOrderService.getOrders(loginUserId, groupId)
-            .flatMap(data -> ResponseHandler.ok(data, "그룹에 속한 주문 목록을 조회했습니다."));
+                .flatMap(data -> ResponseHandler.ok(data, "그룹에 속한 주문 목록을 조회했습니다."));
+    }
+
+    @GetMapping("/{groupId}/devices")
+    public Mono<ResponseEntity<ResponseHandler>> getGroupDevices(@Login Integer loginUserId,
+                                                                 @PathVariable("groupId") Integer groupId) {
+        return groupDeviceService.getDevices(loginUserId, groupId)
+                .flatMap(data -> ResponseHandler.ok(data, "그룹에 속한 기기 목록을 조회했습니다."));
     }
 }
