@@ -4,6 +4,7 @@ import com.somoa.serviceback.domain.user.dto.UserSignupDto;
 import com.somoa.serviceback.domain.user.entity.User;
 import com.somoa.serviceback.domain.user.repository.UserRepository;
 import com.somoa.serviceback.global.auth.JwtService;
+import com.somoa.serviceback.global.auth.dto.UserInfo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -20,15 +21,14 @@ public class UserService {
     private final UserRepository userRepository;
     private final JwtService jwtService;
 
-
-
     public Mono<Map<String, Object>> loginUser(String username, String password) {
         // UserRepository를 사용하여 사용자 인증 진행
         return userRepository.findByUsername(username)
                 .flatMap(user -> {
                     if (password.equals(user.getPassword())) {
                         // 비밀번호가 일치하는 경우, 토큰 생성
-                        return jwtService.generateTokens(user.getUsername())
+                        UserInfo userInfo = UserInfo.of(user);
+                        return jwtService.generateTokens(userInfo)
                                 .map(tokens -> {
                                     Map<String, Object> response = new HashMap<>();
                                     response.put("tokens", tokens);
@@ -49,12 +49,12 @@ public class UserService {
         }
 
         return Mono.just(refreshToken)
-                .flatMap(token -> Mono.justOrEmpty(jwtService.getUserNameFromRefreshToken(token)))
-                .flatMap(username -> {
-                    if (username == null || username.isEmpty()) {
+                .flatMap(token -> Mono.justOrEmpty(jwtService.getUserInfoFromRefreshToken(token)))
+                .flatMap(userInfo -> {
+                    if (userInfo == null || userInfo.getUsername().isEmpty()) {
                         return Mono.error(new IllegalArgumentException("Token does not contain a valid username"));
                     }
-                    return jwtService.generateTokens(username); // 비동기 메소드 호출로 변경
+                    return jwtService.generateTokens(userInfo); // 비동기 메소드 호출로 변경
                 });
     }
 

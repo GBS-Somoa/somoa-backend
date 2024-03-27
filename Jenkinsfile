@@ -132,7 +132,7 @@ pipeline {
             if [ -n "\$image" ]; then
                docker rmi ${env.DOCKER_IMAGE_NAME}:old
             fi
-            docker run -d -p 8080:8080 --rm --name "${env.DOCKER_IMAGE_NAME}" ${env.DOCKER_IMAGE_NAME}:latest
+            docker run -d -p 8080:8080 -e TZ=Asia/Seoul --rm --name "${env.DOCKER_IMAGE_NAME}" ${env.DOCKER_IMAGE_NAME}:latest
             """
          }
          post {
