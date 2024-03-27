@@ -185,7 +185,7 @@ public class DeviceService {
 
     public Mono<DeviceResponse> findById(String deviceId) {
         return deviceRepository.findById(deviceId)
-                .switchIfEmpty(Mono.error(new DeviceException(DeviceErrorCode.DEVICE_NOT_FOUND, deviceId)))
+                .switchIfEmpty(Mono.error(new DeviceException(DeviceErrorCode.DEVICE_NOT_FOUND)))
                 .flatMap(device -> deviceSupplyRepository.findSupplyIdsByDeviceId(deviceId)
                         .collectList()
                         .flatMapMany(Flux::fromIterable)
@@ -204,7 +204,7 @@ public class DeviceService {
 
     public Mono<String> update(Integer userId, String deviceId, DeviceUpdateParam param) {
         return deviceRepository.findById(deviceId)
-                .switchIfEmpty(Mono.error(new DeviceException(DeviceErrorCode.DEVICE_NOT_FOUND, deviceId)))
+                .switchIfEmpty(Mono.error(new DeviceException(DeviceErrorCode.DEVICE_NOT_FOUND)))
                 .flatMap(device -> deviceRepository.findGroupByDeviceId(deviceId)
                         .flatMap(group -> groupUserRepository.findGroupUser(group.getId(), userId)
                                 .switchIfEmpty(Mono.error(new GroupException(GroupErrorCode.USER_NOT_IN_GROUP)))
@@ -221,7 +221,7 @@ public class DeviceService {
 
     public Mono<String> delete(Integer userId, String deviceId) {
         return deviceRepository.findById(deviceId)
-                .switchIfEmpty(Mono.error(new DeviceException(DeviceErrorCode.DEVICE_NOT_FOUND, deviceId)))
+                .switchIfEmpty(Mono.error(new DeviceException(DeviceErrorCode.DEVICE_NOT_FOUND)))
                 .flatMap(device -> deviceRepository.findGroupByDeviceId(deviceId)
                         .flatMap(group -> groupUserRepository.findGroupUser(group.getId(), userId)
                                 .switchIfEmpty(Mono.error(new GroupException(GroupErrorCode.USER_NOT_IN_GROUP)))
