@@ -8,4 +8,4 @@ COPY . .
 RUN chmod +x gradlew && ./gradlew clean bootjar
 RUN mv ${JAR_FILE} ./app.jar
 
-ENTRYPOINT ["java", "-XX:+AllowRedefinitionToAddDeleteMethods", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-XX:+AllowRedefinitionToAddDeleteMethods", "-jar", "-Duser.timezone=Asia/Seoul", "app.jar"]
