@@ -2,12 +2,10 @@ package com.somoa.serviceback.global.auth;
 
 import com.somoa.serviceback.global.config.PropertiesConfig;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import lombok.Value;
-import org.springframework.security.core.userdetails.UserDetails;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -19,24 +17,28 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+
+@Slf4j
 @Component
 @Service
 public class JwtService {
 
-    final private PropertiesConfig propertiesConfig;
+    private final PropertiesConfig propertiesConfig;
 
-    final private SecretKey accessKey;
-    final private SecretKey refreshKey;
+    private final SecretKey accessKey;
+    private final SecretKey refreshKey;
 
-    final private JwtParser parser;
-    final private JwtParser refreshparser;
-    public JwtService(PropertiesConfig propertiesConfig){
+    private final JwtParser parser;
+    private final JwtParser refreshparser;
+
+    public JwtService(PropertiesConfig propertiesConfig) {
         this.propertiesConfig = propertiesConfig;
         this.accessKey = Keys.hmacShaKeyFor(propertiesConfig.getAccessKey().getBytes());
         this.refreshKey = Keys.hmacShaKeyFor(propertiesConfig.getRefreshKey().getBytes());
         this.parser = Jwts.parserBuilder().setSigningKey(this.accessKey).build();
-        this.refreshparser=Jwts.parserBuilder().setSigningKey(this.refreshKey).build();
+        this.refreshparser = Jwts.parserBuilder().setSigningKey(this.refreshKey).build();
     }
+
     public Mono<Map<String, String>> generateTokens(String userName) {
         return Mono.fromCallable(() -> {
             String accessToken = Jwts.builder()
@@ -56,7 +58,6 @@ public class JwtService {
             Map<String, String> tokens = new HashMap<>();
             tokens.put("accessToken", accessToken);
             tokens.put("refreshToken", refreshToken);
-
             return tokens;
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -73,11 +74,10 @@ public class JwtService {
 
     public boolean validateAccessToken(String token) {
         try {
-            System.out.println("dd");
             Claims claims = parser.parseClaimsJws(token).getBody();
             return claims.getExpiration().after(new Date());
         } catch (Exception e) {
-            System.out.println("엑세스토큰 검증실패");
+            log.info("엑세스 토큰 검증 실패");
             return false;
         }
     }
@@ -87,10 +87,8 @@ public class JwtService {
             Claims claims = refreshparser.parseClaimsJws(token).getBody();
             return claims.getExpiration().after(new Date());
         } catch (Exception e) {
-            System.out.println("리프레시토큰 검증실패");
+            log.info("리프레시 토큰 검증 실패");
             return false;
         }
     }
-
-
 }
