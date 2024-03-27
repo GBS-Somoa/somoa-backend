@@ -30,7 +30,7 @@ public class DeviceControllerTest {
     class AuthTest {
         @BeforeEach
         void setUp() {
-            userLoginDto = new UserLoginDto("testUser", "password");
+            userLoginDto = new UserLoginDto("testUser", "password", "testDeviceId", "testFcmToken");
         }
 
         @Test
