@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -19,8 +21,8 @@ public class OrderWithGroupnameResponse {
     private String productImg;
     private int orderCount;
     private String orderAmount;
-    private Timestamp createdAt;
-    private Timestamp updatedAt;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public static OrderWithGroupnameResponse of(Order order) {
         return OrderWithGroupnameResponse.builder()

@@ -10,6 +10,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Table("`order`")
 @Builder
@@ -50,8 +52,8 @@ public class Order {
     private String orderAmount;
 
     @Column("created_at")
-    private Timestamp createdAt;
+    private LocalDateTime createdAt;
 
     @Column("updated_at")
-    private Timestamp updatedAt;
+    private LocalDateTime  updatedAt;
 }

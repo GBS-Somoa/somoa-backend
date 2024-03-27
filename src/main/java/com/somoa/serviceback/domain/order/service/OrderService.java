@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 
 import reactor.core.publisher.Mono;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -60,7 +61,7 @@ public class OrderService {
                             .flatMap(supply -> {
                                 int orderAmountInMilliliters = parseOrderAmount(order.getOrderAmount());
                                 if(supply.getDetails().containsKey("supplyAmount")) {
-                                    supply.setAmountTmp(supply.getAmountTmp() + (order.getOrderCount() * orderAmountInMilliliters));
+                                    supply.setSupplyAmountTmp(supply.getSupplyAmountTmp() + (order.getOrderCount() * orderAmountInMilliliters));
                                 }
                                 return supplyRepository.save(supply);
                             })
@@ -81,28 +82,45 @@ public class OrderService {
     public Mono<Order> updateOrderStatus(String orderStore, String orderStoreId, OrderStatusUpdateDto orderStatusUpdateDto) {
         return orderRepository.findByOrderStoreIdAndOrderStore(orderStoreId, orderStore)
                 .flatMap(order -> {
-                    order.setOrderStatus(orderStatusUpdateDto.getOrderStatus());
-                    return orderRepository.save(order);
+                    System.out.println("1");
+                    Order updatedOrder = Order.builder()
+                            .id(order.getId())
+                            .groupId(order.getGroupId())
+                            .supplyId(order.getSupplyId())
+                            .orderStatus(orderStatusUpdateDto.getOrderStatus())
+                            .productName(order.getProductName())
+                            .orderStore(order.getOrderStore())
+                            .orderStoreId(order.getOrderStoreId())
+                            .productImg(order.getProductImg())
+                            .orderCount(order.getOrderCount())
+                            .orderAmount(order.getOrderAmount())
+                            // createdAt과 updatedAt은 빌더에 포함하지 않음
+                            .build();
+                    return orderRepository.save(updatedOrder);
                 })
                 .flatMap(order -> {
+                    System.out.println("2.5");
                     if ("배송 완료".equals(order.getOrderStatus())) {
+                        System.out.println("3");
                         return supplyRepository.findById(order.getSupplyId())
                                 .switchIfEmpty(Mono.error(new IllegalArgumentException("소모품을 찾을 수 없습니다.")))
                                 .flatMap(supply -> {
+                                    System.out.println("4");
                                     if(supply.getDetails().containsKey("supplyAmount")) {
                                         Integer amount = (Integer) supply.getDetails().get("supplyAmount");
-                                        supply.getDetails().put("supplyAmount", amount + supply.getAmountTmp());
-                                        supply.setAmountTmp(0);
+                                        supply.getDetails().put("supplyAmount", amount + supply.getSupplyAmountTmp());
+                                        supply.setSupplyAmountTmp(0);
                                     }
                                     return supplyRepository.save(supply);
                                 })
                                 .thenReturn(order);
                     } else if ("주문 취소".equals(order.getOrderStatus())) {
+                        System.out.println("5");
                         return supplyRepository.findById(order.getSupplyId())
                                 .switchIfEmpty(Mono.error(new IllegalArgumentException("소모품을 찾을 수 없습니다.")))
                                 .flatMap(supply -> {
                                     if(supply.getDetails().containsKey("supplyAmount")) {
-                                        supply.setAmountTmp(0);
+                                        supply.setSupplyAmountTmp(0);
                                     }
                                     return supplyRepository.save(supply);
                                 })
