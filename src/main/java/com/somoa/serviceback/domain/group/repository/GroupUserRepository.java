@@ -26,7 +26,7 @@ public interface GroupUserRepository extends ReactiveCrudRepository<GroupUser, I
 		+ "  WHERE group_id = :groupId AND role = '관리자'")
 	Mono<GroupUser> findGroupManager(Integer groupId);
 
-	@Query("SELECT u.user_id, u.user_nickname, gu.role "
+	@Query("SELECT u.user_id, u.user_username, u.user_nickname, gu.role "
 		+ "   FROM group_user gu "
 		+ "   JOIN user u "
 		+ "	    ON gu.user_id = u.user_id "
