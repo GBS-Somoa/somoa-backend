@@ -120,7 +120,7 @@ public class DeviceService {
                 .supplyLimit(supplyLimit);
 
         if (AmountFlag) {
-            builder.amountTmp(0);
+            builder.supplyAmountTmp(0);
         }
         Supply newSupply = builder.build();
 

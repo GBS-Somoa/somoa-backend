@@ -1,5 +1,6 @@
 package com.somoa.serviceback.domain.group.repository;
 
+import com.somoa.serviceback.domain.group.entity.Group;
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 
@@ -43,4 +44,13 @@ public interface GroupUserRepository extends ReactiveCrudRepository<GroupUser, I
 		+ "	  FROM group_user "
 		+ "	 WHERE group_id = :groupId")
 	Flux<Integer> findUserIdsByGroupId(int groupId);
+
+	@Query("SELECT g.group_id, g.group_name " +
+			"FROM group_user gu " +
+			"INNER JOIN `group` g ON gu.group_id = g.group_id " +
+			"WHERE gu.user_id = :userId")
+    Flux<Group> findGroupByUserId(Integer userId);
+
+	@Query("SELECT gu.group_id FROM group_user gu WHERE gu.user_id = :userId")
+	Flux<Integer> findGroupIdsByUserId(Integer userId);
 }
