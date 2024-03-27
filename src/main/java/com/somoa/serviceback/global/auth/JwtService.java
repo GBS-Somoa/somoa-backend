@@ -18,6 +18,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @Slf4j
 @Component
@@ -70,9 +71,14 @@ public class JwtService {
         return claims.getSubject();
     }
 
+    public Object getUserId(String token) {
+        Claims claims = parser.parseClaimsJws(token).getBody();
+        return claims.get("id");
+    }
+
     public UserInfo getUserInfoFromRefreshToken(String refreshToken) {
         Claims claims = refreshparser.parseClaimsJws(refreshToken).getBody();
-        return new UserInfo(Integer.parseInt(claims.getId()), claims.getSubject());
+        return new UserInfo((Integer) claims.get("id"), claims.getSubject());
     }
 
     public boolean validateAccessToken(String token) {
