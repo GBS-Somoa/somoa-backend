@@ -13,6 +13,7 @@ import com.somoa.serviceback.global.handler.ResponseHandler;
 import com.somoa.serviceback.global.auth.AuthConverter;
 import com.somoa.serviceback.global.auth.JwtService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -24,7 +25,7 @@ import reactor.core.publisher.Mono;
 import java.io.IOException;
 import java.util.Map;
 
-
+@Slf4j
 @RestController
 @RequestMapping("/user")
 @RequiredArgsConstructor
@@ -71,6 +72,7 @@ public class UserController {
                         // 인증 실패(사용자 이름 또는 비밀번호 오류)의 경우
                         return ResponseHandler.error("유효하지 않은 사용자 이름 또는 비밀번호", HttpStatus.UNAUTHORIZED);
                     } else {
+                        log.warn("login error: ", e);
                         // 그 외 실패(예: 토큰 생성 실패)의 경우
                         return ResponseHandler.error("서버 오류로 인해 로그인을 처리할 수 없습니다.", HttpStatus.INTERNAL_SERVER_ERROR);
                     }
