@@ -60,15 +60,6 @@ public class DeviceController {
         }
     }
 
-
-    /**
-     * Todo: 기기-테스트앱 연결 후 진행
-     * 기기상태 업데이트 및 알람주기
-     * 기기id를 받아와서, 해당 기기의 소모품들을 가져와서, 상태 업데이트 시키고, 기준치 이하일 경우 알람주기
-     * @param device_id
-     * @param deviceApiStatusResponse
-     * @return
-    */
     @PostMapping("/{device_id}")
     public Mono<ResponseEntity<ResponseHandler>> handleDeviceStatus(@PathVariable String device_id, @RequestBody DeviceApiStatusResponse deviceApiStatusResponse) {
         System.out.println(deviceApiStatusResponse.toString());
