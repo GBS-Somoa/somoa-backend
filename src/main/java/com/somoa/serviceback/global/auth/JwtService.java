@@ -1,5 +1,6 @@
 package com.somoa.serviceback.global.auth;
 
+import com.somoa.serviceback.global.auth.dto.UserInfo;
 import com.somoa.serviceback.global.config.PropertiesConfig;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtParser;
@@ -39,17 +40,19 @@ public class JwtService {
         this.refreshparser = Jwts.parserBuilder().setSigningKey(this.refreshKey).build();
     }
 
-    public Mono<Map<String, String>> generateTokens(String userName) {
+    public Mono<Map<String, String>> generateTokens(UserInfo userInfo) {
         return Mono.fromCallable(() -> {
             String accessToken = Jwts.builder()
-                    .setSubject(userName)
+                    .setSubject(userInfo.getUsername())
+                    .claim("id", userInfo.getId())
                     .setIssuedAt(Date.from(Instant.now()))
                     .setExpiration(Date.from(Instant.now().plus(15, ChronoUnit.MINUTES)))
                     .signWith(this.accessKey)
                     .compact();
 
             String refreshToken = Jwts.builder()
-                    .setSubject(userName)
+                    .setSubject(userInfo.getUsername())
+                    .claim("id", userInfo.getId())
                     .setIssuedAt(Date.from(Instant.now()))
                     .setExpiration(Date.from(Instant.now().plus(7, ChronoUnit.DAYS)))
                     .signWith(this.refreshKey)
@@ -67,9 +70,9 @@ public class JwtService {
         return claims.getSubject();
     }
 
-    public String getUserNameFromRefreshToken(String token) {
-        Claims claims = refreshparser.parseClaimsJws(token).getBody();
-        return claims.getSubject();
+    public UserInfo getUserInfoFromRefreshToken(String refreshToken) {
+        Claims claims = refreshparser.parseClaimsJws(refreshToken).getBody();
+        return new UserInfo(Integer.parseInt(claims.getId()), claims.getSubject());
     }
 
     public boolean validateAccessToken(String token) {
