@@ -1,5 +1,6 @@
 package com.somoa.serviceback.domain.order.service;
 
+import com.somoa.serviceback.domain.order.dto.OrderResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -122,5 +123,10 @@ public class OrderService {
                             .then(Mono.just(order));
                 })
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("주문을 찾을 수 없습니다.")));
+    }
+
+    public Mono<OrderResponse> findLatestOrder(String supplyId) {
+        return orderRepository.findLatestOrderBySupplyId(supplyId)
+                .map(OrderResponse::of);
     }
 }
