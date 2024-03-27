@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Data
+@Builder
 @Document(collection = "supply")
 public class Supply {
 
@@ -30,14 +31,7 @@ public class Supply {
     @Field("supplyLimit")
     private Map<String, Object> supplyLimit = new HashMap<>();
 
-    @Builder
-    public Supply(String type, String name, Map<String, Object> details, Map<String, Object> supplyLimit) {
-        this.type = type;
-        this.name = name;
-        this.details = details;
-        this.supplyLimit = supplyLimit;
-    }
-
+    // @Builder.Default 어노테이션을 사용하여 기본값 설정
     @Field("supplyAmountTmp")
-    private Integer amountTmp;
+    private Integer amountTmp; // 기본값은 0
 }

@@ -93,7 +93,7 @@ public class OrderService {
                                     return supplyRepository.save(supply);
                                 })
                                 .thenReturn(order);
-                    } else if("주문 취소".equals(order.getOrderStatus())) {
+                    } else if ("주문 취소".equals(order.getOrderStatus())) {
                         return supplyRepository.findById(order.getSupplyId())
                                 .switchIfEmpty(Mono.error(new IllegalArgumentException("소모품을 찾을 수 없습니다.")))
                                 .flatMap(supply -> {

@@ -86,19 +86,21 @@ public class DeviceService {
 
         Map<String, Object> details = new HashMap<>();
         Map<String, Object> supplyLimit = new HashMap<>();
+        boolean AmountFlag = false;
         for (String detail : param.getDetails()) {
             switch (detail) {
                 case "supplyAmount":
+                    AmountFlag=true;
                     details.put("supplyAmount", 0);
                     supplyLimit.put("supplyAmount", 0); // 기본값 0 -> 알람안뜨게설정
                     break;
                 case "supplyStatus":
                     if(param.getDetails().contains("supplyChangeDate")) { // 필터류 상태
                         details.put("supplyStatus", "good"); // 기본값 "good"
-                        supplyLimit.put("supplyStatus", "null"); // 기본값 "null" -> 알람안뜨게설정
+                        supplyLimit.put("supplyStatus", "bad"); // 기본값 "null" -> 알람안뜨게설정
                     }else{ // 단일 소모품 상태(봉투 등)
                         details.put("supplyStatus", 10); // 기본값 "good"
-                        supplyLimit.put("supplyStatus", 0); // 기본값 "null" -> 알람안뜨게설정
+                        supplyLimit.put("supplyStatus", 8); // 기본값 "null" -> 알람안뜨게설정
                     }
                         break;
                 case "supplyChangeDate":
@@ -111,13 +113,16 @@ public class DeviceService {
                     break;
             }
         }
-
-        Supply newSupply = Supply.builder()
+        Supply.SupplyBuilder builder = Supply.builder()
                 .type(param.getType())
                 .name(param.getName())
-                .details(details) // 기존 디테일 셋팅 로직을 따름
-                .supplyLimit(supplyLimit) // 새로 추가된 부분
-                .build();
+                .details(details)
+                .supplyLimit(supplyLimit);
+
+        if (AmountFlag) {
+            builder.amountTmp(0);
+        }
+        Supply newSupply = builder.build();
 
         // 액체류 소모품이 아닐 때 (그룹으로 관리되지 않음)
         if (!SupplyType.isLiquidType(newSupply.getType())) {
