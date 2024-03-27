@@ -33,7 +33,7 @@ class UserControllerTest {
     @BeforeEach
     void setUp() {
         userSignupDto = new UserSignupDto("testUser", "password", "testNickname");
-        userLoginDto = new UserLoginDto("testUser", "password");
+        userLoginDto = new UserLoginDto("testUser", "password","testDeviceId","testFcmToken");
     }
 
     UserSignupDto signUp(UserSignupDto userSignupDto){
@@ -85,7 +85,7 @@ class UserControllerTest {
         @BeforeEach
         void setup() {
             // 로그인을 수행하고, accessToken 및 refreshToken을 설정
-            UserLoginDto loginDto = new UserLoginDto("testUser", "password");
+            UserLoginDto loginDto = new UserLoginDto("testUser", "password","testDeviceId","testFcmToken");
             login(loginDto); // 이 메서드가 accessToken과 refreshToken을 설정함
         }
 
@@ -126,7 +126,7 @@ class UserControllerTest {
         @BeforeEach
         void setup() {
             // 사용자 로그인하여 초기 accessToken 및 refreshToken 설정
-            UserLoginDto loginDto = new UserLoginDto("testUser", "password");
+            UserLoginDto loginDto = new UserLoginDto("testUser", "password","testDeviceId","testFcmToken");
             login(loginDto);
         }
 

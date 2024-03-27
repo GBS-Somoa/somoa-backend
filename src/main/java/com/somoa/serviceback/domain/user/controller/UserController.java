@@ -79,7 +79,6 @@ public class UserController {
                 });
     }
 
-
     @GetMapping("/auth")
     public Mono<ResponseEntity<ResponseHandler>> auth() {
         return ResponseHandler.ok("인증성공", "인증이 성공적으로 완료되었습니다.");
