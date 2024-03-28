@@ -32,9 +32,16 @@ public interface GroupUserRepository extends ReactiveCrudRepository<GroupUser, I
 	Flux<GroupUserResponse> findAllByGroupId(Integer groupId);
 
 	@Query("SELECT COUNT(*) "
+			+ "   FROM group_user gu "
+			+ "  WHERE gu.user_id = :userId")
+	Mono<Integer> countJoinGroup(Integer userId);
+
+	@Query("SELECT gu.group_id "
 		+ "   FROM group_user gu "
 		+ "  WHERE gu.user_id = :userId")
-	Mono<Integer> countJoinGroup(Integer userId);
+	Flux<Integer> findJoinGroups(Integer userId);
+
+	Flux<GroupUser> findAllByUserId(Integer userId);
 
 	@Query("SELECT role"
 			+ "	  FROM group_user"

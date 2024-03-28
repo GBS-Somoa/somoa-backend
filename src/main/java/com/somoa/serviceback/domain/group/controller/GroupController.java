@@ -1,9 +1,6 @@
 package com.somoa.serviceback.domain.group.controller;
 
-import com.somoa.serviceback.domain.group.dto.GroupModifyParam;
-import com.somoa.serviceback.domain.group.dto.GroupRegisterParam;
-import com.somoa.serviceback.domain.group.dto.GroupUserRegisterParam;
-import com.somoa.serviceback.domain.group.dto.GroupUserRoleParam;
+import com.somoa.serviceback.domain.group.dto.*;
 import com.somoa.serviceback.domain.group.service.GroupDeviceService;
 import com.somoa.serviceback.domain.group.service.GroupManagementService;
 import com.somoa.serviceback.domain.group.service.GroupOrderService;
@@ -111,6 +108,13 @@ public class GroupController {
     public Mono<ResponseEntity<ResponseHandler>> toggleAlarm(@Login Integer loginUserId,
                                                              @PathVariable("groupId") Integer groupId) {
         return groupUserService.toggleAlarm(loginUserId, groupId)
-            .flatMap(data -> ResponseHandler.ok(data, "알림 상태를 변경했습니다."));
+                .flatMap(data -> ResponseHandler.ok(data, "알림 상태를 변경했습니다."));
+    }
+
+    @PatchMapping("/group-order")
+    public Mono<ResponseEntity<ResponseHandler>> changeGroupOrder(@Login Integer loginUserId,
+                                                                  @RequestBody GroupOrderChangeParam param) {
+        return groupUserService.changeGroupOrder(loginUserId, param.getGroupIds())
+                .then(ResponseHandler.ok("그룹 순서를 변경했습니다."));
     }
 }
