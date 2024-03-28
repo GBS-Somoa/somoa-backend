@@ -16,7 +16,6 @@ pipeline {
             echo "현재 브랜치 : ${env.GIT_BRANCH}"
             dir ('.') {
                sh """
-               pwd
                if [ ! -d ./src/main/resources ]
                then
                   mkdir ./src/main/resources
@@ -42,6 +41,28 @@ pipeline {
             failure {
                updateGitlabCommitStatus name: 'build', state: 'failed'
                echo 'application.yml copy failed... :('
+            }
+         }
+      }
+
+
+      // fcm.json 복사
+     stage('fcm.json copy') {
+         when { expression { env.GIT_BRANCH == 'origin/master' || env.GIT_BRANCH == 'origin/develop'} }
+         steps {
+            dir ('.') {
+               sh """
+               cp ../fcm-admin-sdk.json ./src/main/resources/fcm-admin-sdk.json
+               """
+            }
+         }
+         post {
+            success {
+               echo 'fcm.json copy success :D'
+            }
+            failure {
+               updateGitlabCommitStatus name: 'build', state: 'failed'
+               echo 'fcm.json copy failed... :('
             }
          }
       }

@@ -1,17 +1,14 @@
 package com.somoa.serviceback.domain.order.controller;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import com.somoa.serviceback.domain.order.dto.OrderSaveDto;
 import com.somoa.serviceback.domain.order.dto.OrderStatusUpdateDto;
 import com.somoa.serviceback.domain.order.service.OrderService;
 import com.somoa.serviceback.global.handler.ResponseHandler;
-
-import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
-
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -48,10 +45,12 @@ public class OrderController {
                 });
     }
 
-    @GetMapping("/latest")
-    public Mono<ResponseEntity<ResponseHandler>> getLatestOrder(@RequestParam("supply_id") String supplyId) {
-        return orderService.findLatestOrder(supplyId)
-                .flatMap(orderResponse -> ResponseHandler.ok(orderResponse, "해당 소모품에 대한 최근 주문을 조회했습니다."))
+    @GetMapping
+    public Mono<ResponseEntity<ResponseHandler>> getOrders(@RequestParam(value = "supply_id") String supplyId,
+                                                           @RequestParam(value = "order_status", required = false) String orderStatus,
+                                                           @RequestParam(value = "size", defaultValue = "5") int size) {
+        return orderService.findOrders(supplyId, orderStatus, size)
+                .flatMap(data -> ResponseHandler.ok(data, "주문 목록을 조회했습니다."))
                 .onErrorResume(error -> {
                     if (error instanceof IllegalArgumentException) {
                         return ResponseHandler.error(error.getMessage(), HttpStatus.BAD_REQUEST);

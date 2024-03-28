@@ -8,16 +8,18 @@ import org.springframework.transaction.annotation.Transactional;
 import com.somoa.serviceback.domain.order.entity.Order;
 import com.somoa.serviceback.domain.order.dto.OrderSaveDto;
 import com.somoa.serviceback.domain.order.dto.OrderStatusUpdateDto;
+import com.somoa.serviceback.domain.order.entity.Order;
 import com.somoa.serviceback.domain.order.repository.OrderRepository;
 import com.somoa.serviceback.domain.supply.repository.SupplyRepository;
 import com.somoa.serviceback.global.fcm.service.FcmService;
-
 import lombok.RequiredArgsConstructor;
-
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -86,14 +88,6 @@ public class OrderService {
                 });
     }
 
-    /**
-     * Todo : 이름 매핑하기
-     * @param orderStore
-     * @param orderStoreId
-     * @param orderStatusUpdateDto
-     * @return
-     */
-
     @Transactional
     public Mono<Order> updateOrderStatus(String orderStore, String orderStoreId, OrderStatusUpdateDto orderStatusUpdateDto) {
         return orderRepository.findByOrderStoreIdAndOrderStore(orderStoreId, orderStore)
@@ -158,6 +152,12 @@ public class OrderService {
                             .then(Mono.just(order));
                 })
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("주문을 찾을 수 없습니다.")));
+    }
+
+    public Mono<List<OrderResponse>> findOrders(String supplyId, String orderStatus, int size) {
+        return orderRepository.findOrders(supplyId, orderStatus, size)
+                .map(OrderResponse::of)
+                .collectList();
     }
 
     public Mono<OrderResponse> findLatestOrder(String supplyId) {

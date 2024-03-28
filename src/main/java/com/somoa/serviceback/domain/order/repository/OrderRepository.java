@@ -2,6 +2,7 @@ package com.somoa.serviceback.domain.order.repository;
 
 import org.springframework.data.r2dbc.repository.Query;
 import com.somoa.serviceback.domain.order.dto.OrderWithGroupnameResponse;
+import com.somoa.serviceback.domain.order.entity.Order;
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 
@@ -32,4 +33,11 @@ public interface OrderRepository extends ReactiveCrudRepository<Order, Integer> 
             "  LIMIT 1")
     Mono<Order> findLatestOrderBySupplyId(String supplyId);
 
+    @Query("SELECT * " +
+            "   FROM `order` " +
+            "  WHERE supply_id = :supplyId AND" +
+            "        (:orderStatus IS NULL OR (order_status = :orderStatus))" +
+            "  ORDER BY created_at DESC" +
+            "  LIMIT :count")
+    Flux<Order> findOrders(String supplyId, String orderStatus, int count);
 }
