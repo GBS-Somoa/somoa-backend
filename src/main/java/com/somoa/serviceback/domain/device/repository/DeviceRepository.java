@@ -10,6 +10,8 @@ import com.somoa.serviceback.domain.device.entity.Device;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 public interface DeviceRepository extends ReactiveCrudRepository<Device, String> {
 
     @Modifying
@@ -24,8 +26,12 @@ public interface DeviceRepository extends ReactiveCrudRepository<Device, String>
             + "	 WHERE d.device_id = :deviceId")
     Mono<Group> findGroupByDeviceId(String deviceId);
 
-    Flux<Device> findAllByGroupId(Integer groupId);
-
     @Query("SELECT d.group_id FROM device d WHERE d.device_id = :deviceId")
     Mono<String> findGroupIdByDeviceId(String deviceId);
+
+    @Query("SELECT device_id FROM device WHERE group_id IN (:groupIds)")
+    Flux<String> findDeviceIdsByGroupIds(List<Integer> groupIds);
+
+    @Query("SELECT device_id FROM device WHERE group_id = :groupId")
+    Flux<String> findDeviceIdsByGroupId(Integer groupId);
 }
