@@ -1,7 +1,9 @@
 package com.somoa.serviceback.domain.supply.entity;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class SupplyType {
@@ -42,6 +44,9 @@ public class SupplyType {
         put(FABRIC_SOFTENER, 0);
         put(DISH_RINSE, 0);
     }};
+
+    private static final List<String> filterTypes = Arrays.asList(REPLACEABLE_FILTER, CLEANABLE_FILTER);
+
 
     private static final String[] supplyTypes = {
             REPLACEABLE_FILTER, CLEANABLE_FILTER, SUPPLY_TANK, DRAIN_TANK, DUST_BIN,
@@ -111,5 +116,45 @@ public class SupplyType {
             default:
                 return "null";
         }
+    }
+
+    public static boolean validateSupplyLimitKey(String type,String key, Object value) {
+        switch (key) {
+            case "supplyAmount":
+            case "supplyChangeDate":
+            case "supplyLevel":
+                if (!(value instanceof Integer) || (Integer) value < 0) {
+                    System.out.println(key + "는 정수이며 0 이상이어야 합니다.");
+                    return false;
+                }
+                break;
+            case "supplyStatus":
+                if(filterTypes.contains(type)) {
+                    if(!isValidFilterSupplyStatus(value)) {
+                        System.out.println("필터류의 supplyStatus 값이 아닙니다.");
+                        return false;
+                    }
+                }
+                else if (!isValidSupplyStatus(value)) {
+                    System.out.println("유효하지 않은 supplyStatus 값입니다.");
+                    return false;
+                }
+                break;
+            default:
+                System.out.println("알 수 없는 키입니다: " + key);
+                return false;
+        }
+        return true;
+    }
+
+    private static boolean isValidFilterSupplyStatus(Object value){
+        return Arrays.asList("good", "normal", "bad","null").contains(value);
+    }
+    private static boolean isValidSupplyStatus(Object value) {
+        if (value instanceof Integer) {
+            int intValue = (Integer) value;
+            return intValue >= 1 && intValue <= 10;
+        }
+        return false;
     }
 }

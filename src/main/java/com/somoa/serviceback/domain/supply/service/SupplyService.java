@@ -3,13 +3,17 @@ package com.somoa.serviceback.domain.supply.service;
 
 import com.somoa.serviceback.domain.device.repository.DeviceRepository;
 import com.somoa.serviceback.domain.group.repository.GroupUserRepository;
+import com.somoa.serviceback.domain.supply.dto.SupplyLimitParam;
 import com.somoa.serviceback.domain.supply.entity.FilterStatus;
 import com.somoa.serviceback.domain.supply.entity.Supply;
 import com.somoa.serviceback.domain.supply.entity.SupplyType;
 import com.somoa.serviceback.domain.supply.repository.DeviceSupplyRepository;
 import com.somoa.serviceback.domain.supply.repository.SupplyRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -18,6 +22,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SupplyService {
@@ -188,6 +193,35 @@ public class SupplyService {
                 });
     }
 
+    @Transactional
+    public Mono<Supply> updateSupplyLimit(String supplyId, Map<String, Object> newLimit) {
+        if (!newLimit.containsKey("supplyLimit")) {
+            return Mono.error(new IllegalArgumentException("supplyLimit 키가 요청에 포함되어 있지 않습니다."));
+        }
+
+        @SuppressWarnings("unchecked") // 타입 캐스팅 경고를 억제
+        Map<String, Object> supplyLimit = (Map<String, Object>) newLimit.get("supplyLimit");
+
+        return supplyRepository.findById(supplyId)
+                .switchIfEmpty(Mono.error(new RuntimeException("존재하지 않는 소모품 ID입니다.")))
+                .flatMap(supply -> {
+                    Map<String, Object> currentLimit = supply.getSupplyLimit();
+                    boolean allKeysExist = supplyLimit.keySet().stream()
+                            .allMatch(currentLimit::containsKey);
+                    if (!allKeysExist) {
+                        return Mono.error(new DataIntegrityViolationException("하나 이상의 키가 존재하지 않습니다."));
+                    }
+                    for (Map.Entry<String, Object> entry : supplyLimit.entrySet()) {
+                        if (!SupplyType.validateSupplyLimitKey(supply.getType(),entry.getKey(), entry.getValue())) {
+                            return Mono.error(new IllegalArgumentException("유효하지 않은 키 또는 값입니다: " + entry.getKey()));
+                        }
+                    }
+                    currentLimit.putAll(supplyLimit);
+                    supply.setSupplyLimit(currentLimit);
+                    return supplyRepository.save(supply);
+                });
+    }
+
     public static boolean isCareNeeded(Supply supply) {
         Map<String, Object> details = supply.getDetails();
         Map<String, Object> limits = supply.getSupplyLimit();
@@ -217,7 +251,7 @@ public class SupplyService {
             else if ("supplyStatus".equals(key)) { // 청소필요
                 int detailStatusValue = FilterStatus.statusToNumber(detailValue);
                 int limitStatusValue = FilterStatus.statusToNumber(limitValue);
-                if (detailStatusValue < limitStatusValue && limitStatusValue > 0) {
+                if (detailStatusValue <= limitStatusValue && limitStatusValue > 0) {
                     return true;
                 }
             }
@@ -227,7 +261,7 @@ public class SupplyService {
                     return true;
                 }
             } else if ("supplyLevel".equals(key) && detailValue instanceof Integer && limitValue instanceof Integer) { //
-                if (supply.getType().equals("drainTank") && (int) detailValue >= (int) limitValue && (int) limitValue != 0) {
+                if (supply.getType().equals("drainTank") && (int) detailValue >= (int) limitValue && (int) limitValue != 100) {
                     return true; // 청소
                 } else if (supply.getType().equals("supplyTank") && (int) detailValue <= (int) limitValue && (int) limitValue != 0) {
                     return true; //충전

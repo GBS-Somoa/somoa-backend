@@ -2,6 +2,7 @@ package com.somoa.serviceback.domain.supply.controller;
 
 import com.somoa.serviceback.domain.device.exception.DeviceNotFoundException;
 import com.somoa.serviceback.domain.supply.dto.SupplyAmountParam;
+import com.somoa.serviceback.domain.supply.dto.SupplyLimitParam;
 import com.somoa.serviceback.domain.supply.service.SupplyService;
 import com.somoa.serviceback.global.annotation.Login;
 import com.somoa.serviceback.global.handler.ResponseHandler;
@@ -11,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
+
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -51,6 +54,13 @@ public class SupplyController {
     public Mono<ResponseEntity<ResponseHandler>> updateSupply(@PathVariable String supplyId, @RequestBody SupplyAmountParam supplyAmountParam) {
         return supplyService.updateSupply(supplyId, supplyAmountParam.getSupplyAmount())
                 .flatMap(data -> ResponseHandler.ok(data, "소모품 수정에 성공하였습니다."))
+                .onErrorResume(this::handleError);
+    }
+
+    @PatchMapping("/limit/{supplyId}")
+    public Mono<ResponseEntity<ResponseHandler>> updateSupplyLimit(@PathVariable String supplyId, @RequestBody Map<String, Object> limitParam) {
+        return supplyService.updateSupplyLimit(supplyId, limitParam)
+                .flatMap(updatedSupply -> ResponseHandler.ok(updatedSupply, "소모품 알림 기준 용량 수정에 성공하였습니다."))
                 .onErrorResume(this::handleError);
     }
 
