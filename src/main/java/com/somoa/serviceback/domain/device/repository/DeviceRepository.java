@@ -36,4 +36,13 @@ public interface DeviceRepository extends ReactiveCrudRepository<Device, String>
 
     @Query("SELECT device_id FROM device WHERE group_id = :groupId")
     Flux<String> findDeviceIdsByGroupId(Integer groupId);
+
+    @Query("SELECT d.* FROM device d " +
+            "INNER JOIN ( " +
+            "   SELECT ds.device_id FROM device_supply ds " +
+            "   WHERE ds.supply_id = :supplyId " +
+            "   ORDER BY ds.updated_at DESC " +
+            "   LIMIT 1 " +
+            ") AS latest_device ON d.device_id = latest_device.device_id")
+    Mono<Device> findFirstDeviceBySupplyId(String supplyId);
 }

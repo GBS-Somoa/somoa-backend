@@ -32,4 +32,9 @@ public interface DeviceSupplyRepository extends ReactiveCrudRepository<DeviceSup
             "INNER JOIN `group` g ON d.group_id = g.group_id " +
             "WHERE ds.device_id IN (:deviceIds)")
     Flux<SupplyWithGroupInfo> findDistinctSuppliesByDeviceIds(List<String> deviceIds);
+
+    @Query("SELECT device_id FROM device_supply WHERE supply_id = :supplyId ORDER BY updated_at  LIMIT 1")
+    Mono<String> findFirstDeviceIdBySupplyId(String supplyId);
+
+
 }
