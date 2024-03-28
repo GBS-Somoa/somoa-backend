@@ -11,6 +11,7 @@ import com.somoa.serviceback.domain.group.repository.GroupUserRepository;
 import com.somoa.serviceback.domain.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
@@ -114,5 +115,31 @@ public class GroupUserService extends GroupBaseService {
                         return data;
                     });
             });
+    }
+
+    @Transactional
+    public Mono<Void> changeGroupOrder(Integer userId, List<Integer> groupIds) {
+        Map<Integer, Integer> orderMap = new HashMap<>();
+        int groupCount = groupIds.size();
+        for (int i = 0; i < groupCount; ++i) {
+            orderMap.put(groupIds.get(i), i);
+        }
+
+        return groupUserRepository.countJoinGroup(userId)
+                .flatMap(joinGroupCount -> {
+                    if (joinGroupCount != groupCount) {
+                        return Mono.error(new RuntimeException("AAA"));
+                    }
+
+                    Flux<GroupUser> modifiedGroupUsers = groupUserRepository.findAllByUserId(userId)
+                            .map(groupUser -> {
+                                int newOrder = orderMap.get(groupUser.getGroupId());
+                                groupUser.setOrderedNum(newOrder);
+                                return groupUser;
+                            });
+
+                    return groupUserRepository.saveAll(modifiedGroupUsers)
+                            .then();
+                });
     }
 }
