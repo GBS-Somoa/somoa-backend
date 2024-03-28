@@ -47,4 +47,16 @@ public class OrderController {
                     return ResponseHandler.error("서버 오류로 주문 상태 변경에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR);
                 });
     }
+
+    @GetMapping("/latest")
+    public Mono<ResponseEntity<ResponseHandler>> getLatestOrder(@RequestParam("supply_id") String supplyId) {
+        return orderService.findLatestOrder(supplyId)
+                .flatMap(orderResponse -> ResponseHandler.ok(orderResponse, "해당 소모품에 대한 최근 주문을 조회했습니다."))
+                .onErrorResume(error -> {
+                    if (error instanceof IllegalArgumentException) {
+                        return ResponseHandler.error(error.getMessage(), HttpStatus.BAD_REQUEST);
+                    }
+                    return ResponseHandler.error("internal server error.", HttpStatus.INTERNAL_SERVER_ERROR);
+                });
+    }
 }

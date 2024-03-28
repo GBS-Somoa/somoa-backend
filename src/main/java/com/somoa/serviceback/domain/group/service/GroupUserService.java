@@ -1,10 +1,5 @@
 package com.somoa.serviceback.domain.group.service;
 
-import java.util.List;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.somoa.serviceback.domain.group.dto.GroupUserRegisterParam;
 import com.somoa.serviceback.domain.group.dto.GroupUserResponse;
 import com.somoa.serviceback.domain.group.entity.GroupUser;
@@ -14,8 +9,14 @@ import com.somoa.serviceback.domain.group.exception.GroupException;
 import com.somoa.serviceback.domain.group.repository.GroupRepository;
 import com.somoa.serviceback.domain.group.repository.GroupUserRepository;
 import com.somoa.serviceback.domain.user.repository.UserRepository;
-
+import com.somoa.serviceback.global.error.ErrorCode;
+import com.somoa.serviceback.global.exception.ApiException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.*;
 
 @Service
 @Transactional(readOnly = true)
@@ -53,14 +54,15 @@ public class GroupUserService extends GroupBaseService {
                         if (userExists) {
                             return Mono.error(new GroupException(GroupErrorCode.USER_ALREADY_IN_GROUP));
                         } else {
-                            return Mono.defer(() -> groupUserRepository.save(GroupUser.builder()
-                                    .groupId(groupId)
-                                    .userId(userId)
-                                    .role(GroupUserRole.USER_ALL)
-                                    .orderedNum(0)  // TODO: orderNum 맨 마지막으로 할당해야 함
-                                    .alarm(true)
-                                    .build())
-                                .map(GroupUser::getId));
+                            return Mono.defer(() -> countJoinGroup(userId)
+                                    .flatMap(groupCount -> groupUserRepository.save(GroupUser.builder()
+                                                    .groupId(groupId)
+                                                    .userId(userId)
+                                                    .role(GroupUserRole.USER_ALL)
+                                                    .orderedNum(groupCount)
+                                                    .alarm(true)
+                                                    .build())
+                                            .map(GroupUser::getId)));
                         }
                     })))
             .switchIfEmpty(Mono.defer(() -> Mono.error(new IllegalArgumentException("존재하지 않는 유저입니다."))));
@@ -98,5 +100,55 @@ public class GroupUserService extends GroupBaseService {
                         .then();
                 }
             });
+    }
+
+    @Transactional
+    public Mono<Map<String, Object>> toggleAlarm(Integer userId, Integer groupId) {
+        return findGroupUser(groupId, userId)
+            .flatMap(existingGroupUser -> {
+                boolean newAlarmState = !existingGroupUser.isAlarm();
+                existingGroupUser.setAlarm(newAlarmState);
+                return groupUserRepository.save(existingGroupUser)
+                    .map(modifiedUser -> {
+                        Map<String, Object> data = new HashMap<>();
+                        data.put("alarm", newAlarmState);
+                        return data;
+                    });
+            });
+    }
+
+    @Transactional
+    public Mono<Void> changeGroupOrder(Integer userId, List<Integer> groupIds) {
+        Map<Integer, Integer> orderMap = new HashMap<>();
+        Set<Integer> groupIdSet = new HashSet<>();
+        for (int i = 0, end = groupIds.size(); i < end; ++i) {
+            orderMap.put(groupIds.get(i), i);
+            groupIdSet.add(groupIds.get(i));
+        }
+
+        return groupUserRepository.findJoinGroups(userId)
+                .map(groupId -> {
+                    groupIdSet.remove(groupId);
+                    return groupId;
+                })
+                .count()
+                .flatMap(joinGroupCount -> {
+                    if (!groupIdSet.isEmpty()) {
+                        return Mono.error(new GroupException(GroupErrorCode.USER_NOT_IN_GROUP));
+                    }
+                    if (joinGroupCount != orderMap.size()) {
+                        return Mono.error(new GroupException(GroupErrorCode.DOES_NOT_MATCH_NUMBER_OF_GROUPS));
+                    }
+                    Flux<GroupUser> modifiedGroupUsers = groupUserRepository.findAllByUserId(userId)
+                            .map(groupUser -> {
+                                Integer groupId = groupUser.getGroupId();
+                                int newOrder = orderMap.get(groupId);
+                                groupUser.setOrderedNum(newOrder);
+                                return groupUser;
+                            });
+
+                    return groupUserRepository.saveAll(modifiedGroupUsers)
+                            .then();
+                });
     }
 }

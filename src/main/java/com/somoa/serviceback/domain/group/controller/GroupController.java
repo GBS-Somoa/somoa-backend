@@ -1,9 +1,7 @@
 package com.somoa.serviceback.domain.group.controller;
 
-import com.somoa.serviceback.domain.group.dto.GroupModifyParam;
-import com.somoa.serviceback.domain.group.dto.GroupRegisterParam;
-import com.somoa.serviceback.domain.group.dto.GroupUserRegisterParam;
-import com.somoa.serviceback.domain.group.dto.GroupUserRoleParam;
+import com.somoa.serviceback.domain.group.dto.*;
+import com.somoa.serviceback.domain.group.service.GroupDeviceService;
 import com.somoa.serviceback.domain.group.service.GroupManagementService;
 import com.somoa.serviceback.domain.group.service.GroupOrderService;
 import com.somoa.serviceback.domain.group.service.GroupUserService;
@@ -24,6 +22,7 @@ public class GroupController {
     private final GroupManagementService groupManagementService;
     private final GroupUserService groupUserService;
     private final GroupOrderService groupOrderService;
+    private final GroupDeviceService groupDeviceService;
 
     @PostMapping
     public Mono<ResponseEntity<ResponseHandler>> create(@Login Integer loginUserId,
@@ -35,7 +34,6 @@ public class GroupController {
     @GetMapping
     public Mono<ResponseEntity<ResponseHandler>> list(@Login Integer loginUserId) {
         return groupManagementService.findAll(loginUserId)
-            .collectList()
             .flatMap(data -> ResponseHandler.ok(data, "그룹 목록을 조회했습니다."));
     }
 
@@ -96,6 +94,27 @@ public class GroupController {
     public Mono<ResponseEntity<ResponseHandler>> getGroupOrders(@Login Integer loginUserId,
                                                                 @PathVariable("groupId") Integer groupId) {
         return groupOrderService.getOrders(loginUserId, groupId)
-            .flatMap(data -> ResponseHandler.ok(data, "그룹에 속한 주문 목록을 조회했습니다."));
+                .flatMap(data -> ResponseHandler.ok(data, "그룹에 속한 주문 목록을 조회했습니다."));
+    }
+
+    @GetMapping("/{groupId}/devices")
+    public Mono<ResponseEntity<ResponseHandler>> getGroupDevices(@Login Integer loginUserId,
+                                                                 @PathVariable("groupId") Integer groupId) {
+        return groupDeviceService.getDevices(loginUserId, groupId)
+            .flatMap(data -> ResponseHandler.ok(data, "그룹에 속한 기기 목록을 조회했습니다."));
+    }
+
+    @PatchMapping("/{groupId}/alarm")
+    public Mono<ResponseEntity<ResponseHandler>> toggleAlarm(@Login Integer loginUserId,
+                                                             @PathVariable("groupId") Integer groupId) {
+        return groupUserService.toggleAlarm(loginUserId, groupId)
+                .flatMap(data -> ResponseHandler.ok(data, "알림 상태를 변경했습니다."));
+    }
+
+    @PatchMapping("/group-order")
+    public Mono<ResponseEntity<ResponseHandler>> changeGroupOrder(@Login Integer loginUserId,
+                                                                  @RequestBody GroupOrderChangeParam param) {
+        return groupUserService.changeGroupOrder(loginUserId, param.getGroupIds())
+                .then(ResponseHandler.ok("그룹 순서를 변경했습니다."));
     }
 }

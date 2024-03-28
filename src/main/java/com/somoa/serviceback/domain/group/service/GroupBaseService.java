@@ -1,15 +1,13 @@
 package com.somoa.serviceback.domain.group.service;
 
-import org.springframework.transaction.annotation.Transactional;
-
 import com.somoa.serviceback.domain.group.entity.Group;
 import com.somoa.serviceback.domain.group.entity.GroupUser;
 import com.somoa.serviceback.domain.group.error.GroupErrorCode;
 import com.somoa.serviceback.domain.group.exception.GroupException;
 import com.somoa.serviceback.domain.group.repository.GroupRepository;
 import com.somoa.serviceback.domain.group.repository.GroupUserRepository;
-
 import lombok.AllArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 
 @Transactional(readOnly = true)
@@ -41,5 +39,9 @@ public abstract class GroupBaseService {
 
 	protected Mono<GroupUser> findGroupManager(Integer groupId) {
 		return groupUserRepository.findGroupManager(groupId);
+	}
+
+	protected Mono<Integer> countJoinGroup(Integer userId) {
+		return groupUserRepository.countJoinGroup(userId);
 	}
 }

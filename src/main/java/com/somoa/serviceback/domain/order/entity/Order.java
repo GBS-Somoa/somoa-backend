@@ -1,16 +1,10 @@
 package com.somoa.serviceback.domain.order.entity;
 
+import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import java.sql.Timestamp;
-import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Table("`order`")

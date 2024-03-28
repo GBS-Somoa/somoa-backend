@@ -1,5 +1,6 @@
 package com.somoa.serviceback.domain.order.repository;
 
+import org.springframework.data.r2dbc.repository.Query;
 import com.somoa.serviceback.domain.order.dto.OrderWithGroupnameResponse;
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
