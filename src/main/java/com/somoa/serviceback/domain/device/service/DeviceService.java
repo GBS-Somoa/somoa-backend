@@ -25,7 +25,6 @@ import com.somoa.serviceback.domain.device.dto.ExternalApiResponse;
 import com.somoa.serviceback.domain.device.entity.Device;
 import com.somoa.serviceback.domain.device.error.DeviceErrorCode;
 import com.somoa.serviceback.domain.device.exception.DeviceException;
-import com.somoa.serviceback.domain.device.exception.DeviceNotFoundException;
 import com.somoa.serviceback.domain.device.repository.DeviceRepository;
 import com.somoa.serviceback.domain.group.entity.GroupUserRole;
 import com.somoa.serviceback.domain.group.error.GroupErrorCode;
@@ -64,7 +63,6 @@ public class DeviceService {
     private final GroupSupplyRepository groupSupplyRepository;
     private final PropertiesConfig propertiesConfig;
     private final FcmService fcmService;
-    private final GroupRepository groupRepository;
 
     @Transactional
     public Mono<Map<String, Object>> save(DeviceRegisterParam param) {

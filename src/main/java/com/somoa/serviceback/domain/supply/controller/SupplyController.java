@@ -2,7 +2,6 @@ package com.somoa.serviceback.domain.supply.controller;
 
 import com.somoa.serviceback.domain.device.exception.DeviceNotFoundException;
 import com.somoa.serviceback.domain.supply.dto.SupplyAmountParam;
-import com.somoa.serviceback.domain.supply.dto.SupplyLimitParam;
 import com.somoa.serviceback.domain.supply.service.SupplyService;
 import com.somoa.serviceback.global.annotation.Login;
 import com.somoa.serviceback.global.handler.ResponseHandler;

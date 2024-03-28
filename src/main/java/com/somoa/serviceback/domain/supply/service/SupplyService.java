@@ -3,7 +3,6 @@ package com.somoa.serviceback.domain.supply.service;
 
 import com.somoa.serviceback.domain.device.repository.DeviceRepository;
 import com.somoa.serviceback.domain.group.repository.GroupUserRepository;
-import com.somoa.serviceback.domain.supply.dto.SupplyLimitParam;
 import com.somoa.serviceback.domain.supply.entity.FilterStatus;
 import com.somoa.serviceback.domain.supply.entity.Supply;
 import com.somoa.serviceback.domain.supply.entity.SupplyType;
