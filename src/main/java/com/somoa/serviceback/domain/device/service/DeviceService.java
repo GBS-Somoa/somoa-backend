@@ -121,7 +121,7 @@ public class DeviceService {
                     break;
                 case "supplyChangeDate":
                     details.put("supplyChangeDate",Instant.now());
-                    supplyLimit.put("supplyChangeDate", SupplyType.getDefaultLimit(param.getType())); // 기본값 365일
+                    supplyLimit.put("supplyChangeDate", 365); // 기본값 365일
                     break;
                 case "supplyLevel":
                     details.put("supplyLevel", SupplyType.getDefaultDetail(param.getType()));

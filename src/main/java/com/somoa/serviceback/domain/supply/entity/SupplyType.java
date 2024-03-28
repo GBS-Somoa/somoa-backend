@@ -21,7 +21,7 @@ public class SupplyType {
      */
     private static final Map<String, Object> defaultLimits = new HashMap<>() {{
         put(REPLACEABLE_FILTER, 365);
-        put(CLEANABLE_FILTER, FilterStatus.BAD);
+        put(CLEANABLE_FILTER, 365);
         put(SUPPLY_TANK, 10);
         put(DRAIN_TANK, 90);
         put(DUST_BIN, 8);
@@ -35,7 +35,7 @@ public class SupplyType {
         put(REPLACEABLE_FILTER, Instant.now());
         put(CLEANABLE_FILTER, FilterStatus.GOOD);
         put(SUPPLY_TANK, 0);
-        put(DRAIN_TANK, 100);
+        put(DRAIN_TANK, 0);
         put(DUST_BIN, 10);
         put(WASHER_DETERGENT, 0);
         put(DISH_DETERGENT, 0);
