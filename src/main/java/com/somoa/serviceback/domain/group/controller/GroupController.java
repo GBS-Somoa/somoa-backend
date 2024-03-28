@@ -83,11 +83,19 @@ public class GroupController {
 
     @PatchMapping("/{groupId}/users/{userId}/permission")
     public Mono<ResponseEntity<ResponseHandler>> modifyGroupMemberPermission(@Login Integer loginUserId,
-                                                                             @PathVariable("groupId") Integer groupId,
+        @PathVariable("groupId") Integer groupId,
                                                                              @PathVariable("userId") Integer userId,
                                                                              @RequestBody GroupUserRoleParam param) {
         return groupUserService.modifyMemberPermission(loginUserId, groupId, userId, param.getRole())
             .then(ResponseHandler.ok("멤버 권한을 수정했습니다."));
+    }
+
+    @DeleteMapping("/{groupId}/users")
+    public Mono<ResponseEntity<ResponseHandler>> removeGroupMember(@Login Integer loginUserId,
+                                                                   @PathVariable("groupId") Integer groupId,
+                                                                   @RequestBody GroupUserDeleteParam param) {
+        return groupUserService.removeMember(loginUserId, groupId, param)
+            .then(ResponseHandler.ok("멤버를 삭제했습니다."));
     }
 
     @GetMapping("/{groupId}/orders")
@@ -113,8 +121,8 @@ public class GroupController {
 
     @PatchMapping("/group-order")
     public Mono<ResponseEntity<ResponseHandler>> changeGroupOrder(@Login Integer loginUserId,
-                                                                  @RequestBody GroupOrderChangeParam param) {
+        @RequestBody GroupOrderChangeParam param) {
         return groupUserService.changeGroupOrder(loginUserId, param.getGroupIds())
-                .then(ResponseHandler.ok("그룹 순서를 변경했습니다."));
+            .then(ResponseHandler.ok("그룹 순서를 변경했습니다."));
     }
 }

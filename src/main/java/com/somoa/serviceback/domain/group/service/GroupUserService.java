@@ -1,5 +1,6 @@
 package com.somoa.serviceback.domain.group.service;
 
+import com.somoa.serviceback.domain.group.dto.GroupUserDeleteParam;
 import com.somoa.serviceback.domain.group.dto.GroupUserRegisterParam;
 import com.somoa.serviceback.domain.group.dto.GroupUserResponse;
 import com.somoa.serviceback.domain.group.entity.GroupUser;
@@ -9,8 +10,7 @@ import com.somoa.serviceback.domain.group.exception.GroupException;
 import com.somoa.serviceback.domain.group.repository.GroupRepository;
 import com.somoa.serviceback.domain.group.repository.GroupUserRepository;
 import com.somoa.serviceback.domain.user.repository.UserRepository;
-import com.somoa.serviceback.global.error.ErrorCode;
-import com.somoa.serviceback.global.exception.ApiException;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
@@ -55,17 +55,34 @@ public class GroupUserService extends GroupBaseService {
                             return Mono.error(new GroupException(GroupErrorCode.USER_ALREADY_IN_GROUP));
                         } else {
                             return Mono.defer(() -> countJoinGroup(userId)
-                                    .flatMap(groupCount -> groupUserRepository.save(GroupUser.builder()
-                                                    .groupId(groupId)
-                                                    .userId(userId)
-                                                    .role(GroupUserRole.USER_ALL)
-                                                    .orderedNum(groupCount)
-                                                    .alarm(true)
-                                                    .build())
-                                            .map(GroupUser::getId)));
+                                .flatMap(groupCount -> groupUserRepository.save(GroupUser.builder()
+                                        .groupId(groupId)
+                                        .userId(userId)
+                                        .role(GroupUserRole.USER_ALL)
+                                        .orderedNum(groupCount)
+                                        .alarm(true)
+                                        .build())
+                                    .map(GroupUser::getId)));
                         }
                     })))
             .switchIfEmpty(Mono.defer(() -> Mono.error(new IllegalArgumentException("존재하지 않는 유저입니다."))));
+    }
+
+    @Transactional
+    public Mono<Void> removeMember(Integer userId, Integer groupId, GroupUserDeleteParam param) {
+        final Integer removedUserId = param.getUserId();
+        if (userId.equals(param.getUserId()))
+            return Mono.error(new GroupException(GroupErrorCode.NO_GROUP_MANAGEMENT_PERMISSION));
+
+        return groupUserRepository.findRole(groupId, userId)
+            .flatMap(role -> {
+                if (!role.equals(GroupUserRole.USER_ONLY_SUPPLY_MANAGE)) {
+                    return findGroupUser(groupId, removedUserId)
+                        .flatMap(groupUserRepository::delete);
+                } else {
+                    return Mono.error(new GroupException(GroupErrorCode.NO_GROUP_MANAGEMENT_PERMISSION));
+                }
+            });
     }
 
     @Transactional
