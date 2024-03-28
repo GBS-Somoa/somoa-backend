@@ -1,21 +1,19 @@
 package com.somoa.serviceback.domain.order.service;
 
 import com.somoa.serviceback.domain.order.dto.OrderResponse;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import com.somoa.serviceback.domain.order.entity.Order;
 import com.somoa.serviceback.domain.order.dto.OrderSaveDto;
 import com.somoa.serviceback.domain.order.dto.OrderStatusUpdateDto;
+import com.somoa.serviceback.domain.order.entity.Order;
 import com.somoa.serviceback.domain.order.repository.OrderRepository;
 import com.somoa.serviceback.domain.supply.repository.SupplyRepository;
 import com.somoa.serviceback.global.fcm.service.FcmService;
-
 import lombok.RequiredArgsConstructor;
-
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -125,9 +123,9 @@ public class OrderService {
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("주문을 찾을 수 없습니다.")));
     }
 
-    public Mono<OrderResponse> findLatestOrder(String supplyId) {
-        return orderRepository.findLatestOrderBySupplyId(supplyId)
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("해당 소모품에 대한 주문이 없습니다.")))
-                .map(OrderResponse::of);
+    public Mono<List<OrderResponse>> findOrders(String supplyId, String orderStatus, int size) {
+        return orderRepository.findOrders(supplyId, orderStatus, size)
+                .map(OrderResponse::of)
+                .collectList();
     }
 }
