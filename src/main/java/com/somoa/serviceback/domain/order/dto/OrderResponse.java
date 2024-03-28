@@ -1,9 +1,10 @@
 package com.somoa.serviceback.domain.order.dto;
 
 import com.somoa.serviceback.domain.order.entity.Order;
-
 import lombok.Builder;
 import lombok.Data;
+
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -18,6 +19,7 @@ public class OrderResponse {
 	private String productImg;
 	private int orderCount;
 	private String orderAmount;
+	private LocalDateTime createdAt;
 
 	public static OrderResponse of(Order order) {
 		return OrderResponse.builder()
@@ -30,6 +32,7 @@ public class OrderResponse {
 			.productImg(order.getProductImg())
 			.orderCount(order.getOrderCount())
 			.orderAmount(order.getOrderAmount())
+			.createdAt(order.getCreatedAt())
 			.build();
 	}
 }

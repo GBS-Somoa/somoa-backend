@@ -51,6 +51,12 @@ public class OrderController {
     @GetMapping("/latest")
     public Mono<ResponseEntity<ResponseHandler>> getLatestOrder(@RequestParam("supply_id") String supplyId) {
         return orderService.findLatestOrder(supplyId)
-                .flatMap(orderResponse -> ResponseHandler.ok(orderResponse, "해당 소모품에 대한 최근 주문을 조회했습니다."));
+                .flatMap(orderResponse -> ResponseHandler.ok(orderResponse, "해당 소모품에 대한 최근 주문을 조회했습니다."))
+                .onErrorResume(error -> {
+                    if (error instanceof IllegalArgumentException) {
+                        return ResponseHandler.error(error.getMessage(), HttpStatus.BAD_REQUEST);
+                    }
+                    return ResponseHandler.error("internal server error.", HttpStatus.INTERNAL_SERVER_ERROR);
+                });
     }
 }
