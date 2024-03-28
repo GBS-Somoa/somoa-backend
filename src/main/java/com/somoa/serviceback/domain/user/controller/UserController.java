@@ -124,7 +124,7 @@ public class UserController {
     public Mono<ResponseEntity<String>> sendNotificationsToAllUsers() {
         return fcmRepository.findAll()
                 .flatMap(fcmToken -> {
-                    FcmSendDto fcmSendDto = new FcmSendDto(fcmToken.getToken(), "제목", "본문");
+                    FcmSendDto fcmSendDto = new FcmSendDto(fcmToken.getToken(), "제목", "본문","아이콘","경로","데이터");
                     return fcmService.sendMessageTo(fcmSendDto);
                 })
                 .collectList() // 모든 메시지 전송 작업 결과를 리스트로 수집
@@ -139,22 +139,5 @@ public class UserController {
                 });
     }
 
-
-    /**
-     * 특정 그룹에 메세지보내는 코드 (참고용)
-     *
-     */
-    @GetMapping("/sendNotifications2")
-    public Mono<ResponseEntity<String>> sendNotificationsToGroup() throws IOException {
-        // FcmToken 컬렉션에서 모든 토큰 조회
-        try {
-            return fcmService.sendMessageToGroup(1, "제목", "본문")
-                    .map(result -> ResponseEntity.ok().body("Messages sent successfully"))
-                    .defaultIfEmpty(ResponseEntity.status(HttpStatus.NOT_FOUND).body("No tokens found"));
-        }
-        catch(Exception e) {
-            return Mono.error(e);
-        }
-    }
 
 }

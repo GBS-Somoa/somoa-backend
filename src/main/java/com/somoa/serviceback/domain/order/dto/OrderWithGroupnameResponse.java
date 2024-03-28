@@ -13,6 +13,8 @@ import java.time.LocalDateTime;
 public class OrderWithGroupnameResponse {
 
     private Integer orderId;
+    private String deviceId;
+    private String deviceName;
     private String supplyId;
     private String orderStatus;
     private String orderStore;
