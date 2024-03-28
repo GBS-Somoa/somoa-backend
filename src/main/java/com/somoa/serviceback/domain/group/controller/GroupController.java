@@ -37,7 +37,6 @@ public class GroupController {
     @GetMapping
     public Mono<ResponseEntity<ResponseHandler>> list(@Login Integer loginUserId) {
         return groupManagementService.findAll(loginUserId)
-            .collectList()
             .flatMap(data -> ResponseHandler.ok(data, "그룹 목록을 조회했습니다."));
     }
 

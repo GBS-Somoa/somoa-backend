@@ -1,11 +1,5 @@
 package com.somoa.serviceback.domain.group.service;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.somoa.serviceback.domain.group.dto.GroupDetailResponse;
 import com.somoa.serviceback.domain.group.dto.GroupModifyParam;
 import com.somoa.serviceback.domain.group.dto.GroupRegisterParam;
@@ -17,9 +11,13 @@ import com.somoa.serviceback.domain.group.error.GroupErrorCode;
 import com.somoa.serviceback.domain.group.exception.GroupException;
 import com.somoa.serviceback.domain.group.repository.GroupRepository;
 import com.somoa.serviceback.domain.group.repository.GroupUserRepository;
-
-import reactor.core.publisher.Flux;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @Transactional(readOnly = true)
@@ -35,16 +33,17 @@ public class GroupManagementService extends GroupBaseService {
         return groupRepository.save(Group.builder()
                         .name(param.getGroupName())
                         .build())
-                .flatMap(savedGroup -> {
-                    GroupUser groupUser = GroupUser.builder()
-                            .groupId(savedGroup.getId())
-                            .userId(userId)
-                            .role(GroupUserRole.MANAGER)
-                            .orderedNum(0)  // TODO: orderNum 맨 마지막으로 할당해야 함
-                            .alarm(true)
-                            .build();
-                    return groupUserRepository.save(groupUser);
-                })
+                .flatMap(savedGroup -> countJoinGroup(userId)
+                        .flatMap(groupCount -> {
+                            GroupUser groupUser = GroupUser.builder()
+                                    .groupId(savedGroup.getId())
+                                    .userId(userId)
+                                    .role(GroupUserRole.MANAGER)
+                                    .orderedNum(groupCount)
+                                    .alarm(true)
+                                    .build();
+                            return groupUserRepository.save(groupUser);
+                        }))
                 .map(groupUser -> {
                     Map<String, Object> data = new HashMap<>();
                     data.put("groupId", groupUser.getGroupId());
@@ -52,9 +51,9 @@ public class GroupManagementService extends GroupBaseService {
                 });
     }
 
-    public Flux<GroupResponse> findAll(Integer userId) {
+    public Mono<List<GroupResponse>> findAll(Integer userId) {
         return groupRepository.findAllByUserId(userId)
-            .map(GroupResponse::of);
+            .collectList();
     }
 
     public Mono<GroupDetailResponse> findOne(Integer userId, Integer groupId) {

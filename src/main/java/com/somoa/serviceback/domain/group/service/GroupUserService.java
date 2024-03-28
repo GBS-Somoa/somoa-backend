@@ -1,12 +1,5 @@
 package com.somoa.serviceback.domain.group.service;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.somoa.serviceback.domain.group.dto.GroupUserRegisterParam;
 import com.somoa.serviceback.domain.group.dto.GroupUserResponse;
 import com.somoa.serviceback.domain.group.entity.GroupUser;
@@ -16,8 +9,13 @@ import com.somoa.serviceback.domain.group.exception.GroupException;
 import com.somoa.serviceback.domain.group.repository.GroupRepository;
 import com.somoa.serviceback.domain.group.repository.GroupUserRepository;
 import com.somoa.serviceback.domain.user.repository.UserRepository;
-
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @Transactional(readOnly = true)
@@ -55,14 +53,15 @@ public class GroupUserService extends GroupBaseService {
                         if (userExists) {
                             return Mono.error(new GroupException(GroupErrorCode.USER_ALREADY_IN_GROUP));
                         } else {
-                            return Mono.defer(() -> groupUserRepository.save(GroupUser.builder()
-                                    .groupId(groupId)
-                                    .userId(userId)
-                                    .role(GroupUserRole.USER_ALL)
-                                    .orderedNum(0)  // TODO: orderNum 맨 마지막으로 할당해야 함
-                                    .alarm(true)
-                                    .build())
-                                .map(GroupUser::getId));
+                            return Mono.defer(() -> countJoinGroup(userId)
+                                    .flatMap(groupCount -> groupUserRepository.save(GroupUser.builder()
+                                                    .groupId(groupId)
+                                                    .userId(userId)
+                                                    .role(GroupUserRole.USER_ALL)
+                                                    .orderedNum(groupCount)
+                                                    .alarm(true)
+                                                    .build())
+                                            .map(GroupUser::getId)));
                         }
                     })))
             .switchIfEmpty(Mono.defer(() -> Mono.error(new IllegalArgumentException("존재하지 않는 유저입니다."))));
