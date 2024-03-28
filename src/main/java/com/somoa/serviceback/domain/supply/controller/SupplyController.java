@@ -3,6 +3,7 @@ package com.somoa.serviceback.domain.supply.controller;
 import com.somoa.serviceback.domain.device.exception.DeviceNotFoundException;
 import com.somoa.serviceback.domain.supply.dto.SupplyAmountParam;
 import com.somoa.serviceback.domain.supply.service.SupplyService;
+import com.somoa.serviceback.global.annotation.Login;
 import com.somoa.serviceback.global.handler.ResponseHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +21,7 @@ public class SupplyController {
     private final SupplyService supplyService;
     @GetMapping
     public Mono<ResponseEntity<ResponseHandler>> supplySearch(@RequestParam Integer groupId, @RequestParam Boolean careRequired) {
-        return supplyService.searchSupply(groupId, careRequired)
+        return supplyService.searchGroupSupply(groupId, careRequired)
                 .collectList() // 모든 Flux 결과를 List로 수집
                 .flatMap(suppliesList -> {
                     if (!suppliesList.isEmpty()) {
@@ -31,6 +32,20 @@ public class SupplyController {
                 });
     }
 
+
+    @GetMapping("/groupsupply")
+    public Mono<ResponseEntity<ResponseHandler>> allSupplybyGroupSearch(@Login Integer loginUserId, @RequestParam Integer groupId) {
+        return supplyService.searchAllGroupSupply(loginUserId,groupId)
+                .flatMap(resultMap -> ResponseHandler.ok(resultMap, "모든 소모품 목록 조회에 성공했습니다."))
+                .onErrorResume(this::handleError);
+    }
+
+    @GetMapping("/all")
+    public Mono<ResponseEntity<ResponseHandler>> allSupplySearch(@Login Integer loginUserId) {
+        return supplyService.searchAllSupply(loginUserId)
+                .flatMap(resultMap -> ResponseHandler.ok(resultMap, "모든 소모품 목록 조회에 성공했습니다."))
+                   .onErrorResume(this::handleError);
+    }
 
     @PatchMapping("/{supplyId}")
     public Mono<ResponseEntity<ResponseHandler>> updateSupply(@PathVariable String supplyId, @RequestBody SupplyAmountParam supplyAmountParam) {

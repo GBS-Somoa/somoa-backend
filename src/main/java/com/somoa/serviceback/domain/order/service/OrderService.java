@@ -1,6 +1,11 @@
 package com.somoa.serviceback.domain.order.service;
 
 import com.somoa.serviceback.domain.order.dto.OrderResponse;
+import com.somoa.serviceback.domain.supply.repository.DeviceSupplyRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.somoa.serviceback.domain.order.entity.Order;
 import com.somoa.serviceback.domain.order.dto.OrderSaveDto;
 import com.somoa.serviceback.domain.order.dto.OrderStatusUpdateDto;
 import com.somoa.serviceback.domain.order.entity.Order;
@@ -12,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +28,7 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final SupplyRepository supplyRepository;
+    private final DeviceSupplyRepository deviceSupplyRepository;
     final FcmService fcmService;
 
     public int parseOrderAmount(String orderAmount) {
@@ -59,14 +66,19 @@ public class OrderService {
                             .flatMap(supply -> {
                                 int orderAmountInMilliliters = parseOrderAmount(order.getOrderAmount());
                                 if(supply.getDetails().containsKey("supplyAmount")) {
-                                    supply.setAmountTmp(supply.getAmountTmp() + (order.getOrderCount() * orderAmountInMilliliters));
+                                    supply.setSupplyAmountTmp(supply.getSupplyAmountTmp() + (order.getOrderCount() * orderAmountInMilliliters));
                                 }
                                 return supplyRepository.save(supply);
                             })
                             .thenReturn(order);
                 })
                 .flatMap(order -> {
-                    return fcmService.sendMessageToGroup(order.getGroupId(), "새로운 주문", order.getOrderStore() + "에서 " + order.getProductName() + " 주문을 완료하였습니다.")
+                    return fcmService.sendMessageToGroup(order.getGroupId()
+                                    , "새로운 주문"
+                                    , order.getOrderStore() + "에서 " + order.getProductName() + " 주문을 완료하였습니다."
+                            ,"null"
+                            ,"OrderListScreen"
+                            ,Integer.toString(order.getGroupId()))
                             .then(Mono.just(order));
                 })
                 .map(order -> {
@@ -80,8 +92,19 @@ public class OrderService {
     public Mono<Order> updateOrderStatus(String orderStore, String orderStoreId, OrderStatusUpdateDto orderStatusUpdateDto) {
         return orderRepository.findByOrderStoreIdAndOrderStore(orderStoreId, orderStore)
                 .flatMap(order -> {
-                    order.setOrderStatus(orderStatusUpdateDto.getOrderStatus());
-                    return orderRepository.save(order);
+                    Order updatedOrder = Order.builder()
+                            .id(order.getId())
+                            .groupId(order.getGroupId())
+                            .supplyId(order.getSupplyId())
+                            .orderStatus(orderStatusUpdateDto.getOrderStatus())
+                            .productName(order.getProductName())
+                            .orderStore(order.getOrderStore())
+                            .orderStoreId(order.getOrderStoreId())
+                            .productImg(order.getProductImg())
+                            .orderCount(order.getOrderCount())
+                            .orderAmount(order.getOrderAmount())
+                            .build();
+                    return orderRepository.save(updatedOrder);
                 })
                 .flatMap(order -> {
                     if ("배송 완료".equals(order.getOrderStatus())) {
@@ -90,18 +113,19 @@ public class OrderService {
                                 .flatMap(supply -> {
                                     if(supply.getDetails().containsKey("supplyAmount")) {
                                         Integer amount = (Integer) supply.getDetails().get("supplyAmount");
-                                        supply.getDetails().put("supplyAmount", amount + supply.getAmountTmp());
-                                        supply.setAmountTmp(0);
+                                        supply.getDetails().put("supplyAmount", amount + supply.getSupplyAmountTmp());
+                                        supply.setSupplyAmountTmp(0);
                                     }
                                     return supplyRepository.save(supply);
                                 })
                                 .thenReturn(order);
                     } else if ("주문 취소".equals(order.getOrderStatus())) {
+                        System.out.println("5");
                         return supplyRepository.findById(order.getSupplyId())
                                 .switchIfEmpty(Mono.error(new IllegalArgumentException("소모품을 찾을 수 없습니다.")))
                                 .flatMap(supply -> {
                                     if(supply.getDetails().containsKey("supplyAmount")) {
-                                        supply.setAmountTmp(0);
+                                        supply.setSupplyAmountTmp(0);
                                     }
                                     return supplyRepository.save(supply);
                                 })
@@ -117,7 +141,14 @@ public class OrderService {
                     } else {
                         title = "배송 상태 변경";
                     }
-                    return fcmService.sendMessageToGroup(order.getGroupId(), title, order.getOrderStatus() + " : " + order.getOrderStore() + "에서 주문한 " + order.getProductName())
+                    return fcmService.sendMessageToGroup(
+                            order.getGroupId(),
+                                    title,
+                                    order.getOrderStatus() + " : " + order.getOrderStore() + "에서 주문한 " + order.getProductName()
+                            ,"null"
+                                    ,"OrderListScreen"
+                                    ,Integer.toString(order.getGroupId())
+                                    )
                             .then(Mono.just(order));
                 })
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("주문을 찾을 수 없습니다.")));
@@ -128,4 +159,5 @@ public class OrderService {
                 .map(OrderResponse::of)
                 .collectList();
     }
+
 }

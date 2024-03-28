@@ -16,6 +16,9 @@ public class SupplyType {
     public static final String FABRIC_SOFTENER = "fabricSoftener";
     public static final String DISH_RINSE = "dishRinse";
 
+    /**
+     *  필터류의 status는  별도로 지정해야함.
+     */
     private static final Map<String, Object> defaultLimits = new HashMap<>() {{
         put(REPLACEABLE_FILTER, 365);
         put(CLEANABLE_FILTER, FilterStatus.BAD);
@@ -70,5 +73,43 @@ public class SupplyType {
                 return true;
         }
         return false;
+    }
+    
+    public static String getKoreanForType(String type){
+        switch (type) {
+            case REPLACEABLE_FILTER:
+                return "교체";
+            case CLEANABLE_FILTER:
+            case DRAIN_TANK:
+            case DUST_BIN:
+                return "청소";
+            case SUPPLY_TANK:
+            case WASHER_DETERGENT:
+            case DISH_DETERGENT:
+            case FABRIC_SOFTENER:
+            case DISH_RINSE:
+                return "추가";
+            default:
+                return "null";
+        }
+    }
+
+    public static String getActionForType(String type) {
+        switch (type) {
+            case REPLACEABLE_FILTER:
+                return "change";
+            case CLEANABLE_FILTER:
+            case DRAIN_TANK:
+            case DUST_BIN:
+                return "clean";
+            case SUPPLY_TANK:
+            case WASHER_DETERGENT:
+            case DISH_DETERGENT:
+            case FABRIC_SOFTENER:
+            case DISH_RINSE:
+                return "add";
+            default:
+                return "null";
+        }
     }
 }
