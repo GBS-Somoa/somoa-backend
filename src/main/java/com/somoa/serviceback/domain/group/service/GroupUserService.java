@@ -9,14 +9,14 @@ import com.somoa.serviceback.domain.group.exception.GroupException;
 import com.somoa.serviceback.domain.group.repository.GroupRepository;
 import com.somoa.serviceback.domain.group.repository.GroupUserRepository;
 import com.somoa.serviceback.domain.user.repository.UserRepository;
+import com.somoa.serviceback.global.error.ErrorCode;
+import com.somoa.serviceback.global.exception.ApiException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @Transactional(readOnly = true)
@@ -120,20 +120,29 @@ public class GroupUserService extends GroupBaseService {
     @Transactional
     public Mono<Void> changeGroupOrder(Integer userId, List<Integer> groupIds) {
         Map<Integer, Integer> orderMap = new HashMap<>();
-        int groupCount = groupIds.size();
-        for (int i = 0; i < groupCount; ++i) {
+        Set<Integer> groupIdSet = new HashSet<>();
+        for (int i = 0, end = groupIds.size(); i < end; ++i) {
             orderMap.put(groupIds.get(i), i);
+            groupIdSet.add(groupIds.get(i));
         }
 
-        return groupUserRepository.countJoinGroup(userId)
+        return groupUserRepository.findJoinGroups(userId)
+                .map(groupId -> {
+                    groupIdSet.remove(groupId);
+                    return groupId;
+                })
+                .count()
                 .flatMap(joinGroupCount -> {
-                    if (joinGroupCount != groupCount) {
-                        return Mono.error(new RuntimeException("AAA"));
+                    if (!groupIdSet.isEmpty()) {
+                        return Mono.error(new GroupException(GroupErrorCode.USER_NOT_IN_GROUP));
                     }
-
+                    if (joinGroupCount != orderMap.size()) {
+                        return Mono.error(new GroupException(GroupErrorCode.DOES_NOT_MATCH_NUMBER_OF_GROUPS));
+                    }
                     Flux<GroupUser> modifiedGroupUsers = groupUserRepository.findAllByUserId(userId)
                             .map(groupUser -> {
-                                int newOrder = orderMap.get(groupUser.getGroupId());
+                                Integer groupId = groupUser.getGroupId();
+                                int newOrder = orderMap.get(groupId);
                                 groupUser.setOrderedNum(newOrder);
                                 return groupUser;
                             });
