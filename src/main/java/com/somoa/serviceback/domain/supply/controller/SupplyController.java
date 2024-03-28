@@ -32,17 +32,19 @@ public class SupplyController {
                 });
     }
 
+
+    @GetMapping("/groupsupply")
+    public Mono<ResponseEntity<ResponseHandler>> allSupplybyGroupSearch(@Login Integer loginUserId, @RequestParam Integer groupId) {
+        return supplyService.searchAllGroupSupply(loginUserId,groupId)
+                .flatMap(resultMap -> ResponseHandler.ok(resultMap, "모든 소모품 목록 조회에 성공했습니다."))
+                .onErrorResume(this::handleError);
+    }
+
     @GetMapping("/all")
     public Mono<ResponseEntity<ResponseHandler>> allSupplySearch(@Login Integer loginUserId) {
         return supplyService.searchAllSupply(loginUserId)
-                .collectList() // 모든 Flux 결과를 List로 수집
-                .flatMap(suppliesList -> {
-                    if (!suppliesList.isEmpty()) {
-                        return ResponseHandler.ok(suppliesList, "조건에 해당하는 소모품 목록 조회에 성공했습니다.");
-                    } else {
-                        return ResponseHandler.error("조건에 맞는 소모품이 없습니다.", HttpStatus.NOT_FOUND);
-                    }
-                });
+                .flatMap(resultMap -> ResponseHandler.ok(resultMap, "모든 소모품 목록 조회에 성공했습니다."))
+                   .onErrorResume(this::handleError);
     }
 
     @PatchMapping("/{supplyId}")
