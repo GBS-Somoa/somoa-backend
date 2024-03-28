@@ -1,6 +1,7 @@
 package com.somoa.serviceback.domain.order.service;
 
 import com.somoa.serviceback.domain.order.dto.OrderResponse;
+import com.somoa.serviceback.domain.supply.repository.DeviceSupplyRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final SupplyRepository supplyRepository;
+    private final DeviceSupplyRepository deviceSupplyRepository;
     final FcmService fcmService;
 
     public int parseOrderAmount(String orderAmount) {
@@ -69,7 +71,12 @@ public class OrderService {
                             .thenReturn(order);
                 })
                 .flatMap(order -> {
-                    return fcmService.sendMessageToGroup(order.getGroupId(), "새로운 주문", order.getOrderStore() + "에서 " + order.getProductName() + " 주문을 완료하였습니다.")
+                    return fcmService.sendMessageToGroup(order.getGroupId()
+                                    , "새로운 주문"
+                                    , order.getOrderStore() + "에서 " + order.getProductName() + " 주문을 완료하였습니다."
+                            ,"null"
+                            ,"OrderListScreen"
+                            ,Integer.toString(order.getGroupId()))
                             .then(Mono.just(order));
                 })
                 .map(order -> {
@@ -79,11 +86,18 @@ public class OrderService {
                 });
     }
 
+    /**
+     * Todo : 이름 매핑하기
+     * @param orderStore
+     * @param orderStoreId
+     * @param orderStatusUpdateDto
+     * @return
+     */
+
     @Transactional
     public Mono<Order> updateOrderStatus(String orderStore, String orderStoreId, OrderStatusUpdateDto orderStatusUpdateDto) {
         return orderRepository.findByOrderStoreIdAndOrderStore(orderStoreId, orderStore)
                 .flatMap(order -> {
-                    System.out.println("1");
                     Order updatedOrder = Order.builder()
                             .id(order.getId())
                             .groupId(order.getGroupId())
@@ -95,18 +109,14 @@ public class OrderService {
                             .productImg(order.getProductImg())
                             .orderCount(order.getOrderCount())
                             .orderAmount(order.getOrderAmount())
-                            // createdAt과 updatedAt은 빌더에 포함하지 않음
                             .build();
                     return orderRepository.save(updatedOrder);
                 })
                 .flatMap(order -> {
-                    System.out.println("2.5");
                     if ("배송 완료".equals(order.getOrderStatus())) {
-                        System.out.println("3");
                         return supplyRepository.findById(order.getSupplyId())
                                 .switchIfEmpty(Mono.error(new IllegalArgumentException("소모품을 찾을 수 없습니다.")))
                                 .flatMap(supply -> {
-                                    System.out.println("4");
                                     if(supply.getDetails().containsKey("supplyAmount")) {
                                         Integer amount = (Integer) supply.getDetails().get("supplyAmount");
                                         supply.getDetails().put("supplyAmount", amount + supply.getSupplyAmountTmp());
@@ -137,7 +147,14 @@ public class OrderService {
                     } else {
                         title = "배송 상태 변경";
                     }
-                    return fcmService.sendMessageToGroup(order.getGroupId(), title, order.getOrderStatus() + " : " + order.getOrderStore() + "에서 주문한 " + order.getProductName())
+                    return fcmService.sendMessageToGroup(
+                            order.getGroupId(),
+                                    title,
+                                    order.getOrderStatus() + " : " + order.getOrderStore() + "에서 주문한 " + order.getProductName()
+                            ,"null"
+                                    ,"OrderListScreen"
+                                    ,Integer.toString(order.getGroupId())
+                                    )
                             .then(Mono.just(order));
                 })
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("주문을 찾을 수 없습니다.")));

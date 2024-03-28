@@ -14,4 +14,11 @@ public class FcmSendDto {
     private String title;
 
     private String body;
+
+    private String icon;
+
+    private String path;
+
+    private String pathData;
+
 }

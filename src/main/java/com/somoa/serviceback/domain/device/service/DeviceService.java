@@ -10,6 +10,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.somoa.serviceback.domain.group.entity.Group;
+import com.somoa.serviceback.domain.group.repository.GroupRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -62,6 +64,7 @@ public class DeviceService {
     private final GroupSupplyRepository groupSupplyRepository;
     private final PropertiesConfig propertiesConfig;
     private final FcmService fcmService;
+    private final GroupRepository groupRepository;
 
     @Transactional
     public Mono<Map<String, Object>> save(DeviceRegisterParam param) {
@@ -253,29 +256,30 @@ public class DeviceService {
 
     public Mono<Void> statusUpdate(String deviceId, DeviceApiStatusResponse deviceApiStatusResponse) {
         // deviceId로 groupId 조회
-        return deviceRepository.findGroupIdByDeviceId(deviceId)
-                .flatMap(groupId ->
+        return deviceRepository.findGroupByDeviceId(deviceId)
+                .flatMap(group ->
                         // groupId를 정상적으로 조회한 후에 다음 작업 진행
                         deviceSupplyRepository.findAllSupplyIdByDeviceId(deviceId)
                                 .collectList()
                                 .flatMap(supplyIds ->
                                         Flux.fromIterable(supplyIds)
                                                 .flatMap(supplyId ->
-                                                        updateSupplyDetails(supplyId, deviceApiStatusResponse.getSupplies(), groupId)
+                                                        updateSupplyDetails(supplyId, deviceApiStatusResponse.getSupplies(), group)
                                                 )
                                                 .then()
                                 )
                 );
     }
 
-    private Mono<Void> updateSupplyDetails(String supplyId, List<SupplyStatusParam> supplyStatusParams, String groupId) {
+    @Transactional
+    private Mono<Void> updateSupplyDetails(String supplyId, List<SupplyStatusParam> supplyStatusParams, Group group) {
         return supplyRepository.findById(supplyId)
                 .flatMap(supply -> Flux.fromIterable(supplyStatusParams)
                         .filter(param -> supply.getName().equals(param.getName()) && supply.getType().equals(param.getType()))
                         .next() // 첫 번째 일치하는 요소를 가져옴
                         .flatMap(param -> updateSupply(supply, param)) // 비동기적으로 updateSupply 실행
                         .flatMap(supplyRepository::save) // 업데이트된 Supply 저장
-                        .flatMap(updatedSupply -> checkLimitsAndNotify(updatedSupply, groupId)) // 알림 확인 및 전송
+                        .flatMap(updatedSupply -> checkLimitsAndNotify(updatedSupply, group)) // 알림 확인 및 전송
                         .then() // 모든 작업 완료 시 Mono<Void> 반환
                 );
     }
@@ -325,12 +329,21 @@ public class DeviceService {
         }).onErrorMap(NumberFormatException.class, e -> new IllegalArgumentException("Invalid format for supplyAmount", e));
     }
 
-    private Mono<Void> checkLimitsAndNotify(Supply supply, String groupId) {
+    private Mono<Void> checkLimitsAndNotify(Supply supply, Group group) {
         // isCareNeeded 메서드를 사용하여 care가 필요한지 확인
         boolean shouldNotify = isCareNeeded(supply);
         if (shouldNotify) {
             log.info("알림 전송");
-            return fcmService.sendMessageToGroup(Integer.parseInt(groupId), supply.getName() + " 부족", supply.getType()).then();
+            // findFirstDeviceIdBySupplyId 메서드의 정의가 필요하며, 이 메서드는 해당 supplyId를 가진 첫 번째 deviceId를 Mono로 반환해야 합니다.
+            return deviceSupplyRepository.findFirstDeviceIdBySupplyId(supply.getId())
+                    .flatMap(deviceId -> fcmService.sendMessageToGroup(
+                            group.getId(),
+                            SupplyType.getKoreanForType(supply.getType())+" 필요(" + group.getName() + ")",
+                            group.getName() + "의 " + supply.getName() + "의 " +SupplyType.getKoreanForType(supply.getType())+"가 필요합니다."
+                            , SupplyType.getActionForType(supply.getType()),
+                            "DeviceDetailScreen",
+                            deviceId)
+                    ).then(); // 작업이 완료되면 Mono<Void>를 반환합니다.
         } else {
             return Mono.empty();
         }

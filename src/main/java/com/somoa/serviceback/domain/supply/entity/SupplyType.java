@@ -74,11 +74,30 @@ public class SupplyType {
         }
         return false;
     }
+    
+    public static String getKoreanForType(String type){
+        switch (type) {
+            case REPLACEABLE_FILTER:
+                return "교체";
+            case CLEANABLE_FILTER:
+            case DRAIN_TANK:
+            case DUST_BIN:
+                return "청소";
+            case SUPPLY_TANK:
+            case WASHER_DETERGENT:
+            case DISH_DETERGENT:
+            case FABRIC_SOFTENER:
+            case DISH_RINSE:
+                return "추가";
+            default:
+                return "null";
+        }
+    }
 
     public static String getActionForType(String type) {
         switch (type) {
             case REPLACEABLE_FILTER:
-                return "replace";
+                return "change";
             case CLEANABLE_FILTER:
             case DRAIN_TANK:
             case DUST_BIN:
@@ -88,7 +107,7 @@ public class SupplyType {
             case DISH_DETERGENT:
             case FABRIC_SOFTENER:
             case DISH_RINSE:
-                return "charge";
+                return "add";
             default:
                 return "null";
         }

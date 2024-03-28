@@ -14,8 +14,19 @@ public class FcmMessageDto {
     @AllArgsConstructor
     @Getter
     public static class Message {
+
         private FcmMessageDto.Notification notification;
         private String token;
+        private FcmMessageDto.Data data;
+    }
+
+    @Builder
+    @AllArgsConstructor
+    @Getter
+    public static class  Data{
+        private String icon;
+        private String path;
+        private String pathData;
     }
 
     @Builder

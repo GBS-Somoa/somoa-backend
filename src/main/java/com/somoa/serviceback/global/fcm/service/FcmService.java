@@ -76,6 +76,11 @@ public class FcmService {
                                 .title(fcmSendDto.getTitle())
                                 .body(fcmSendDto.getBody())
                                 .build())
+                        .data((FcmMessageDto.Data.builder()
+                                .path(fcmSendDto.getPath())
+                                .icon(fcmSendDto.getIcon())
+                                .pathData(fcmSendDto.getPathData())
+                                .build()))
                         .build())
                 .validateOnly(false)
                 .build();
@@ -86,10 +91,10 @@ public class FcmService {
         }
     }
 
-    public Mono<Integer> sendMessageToGroup(int groupId, String title, String body) {
+    public Mono<Integer> sendMessageToGroup(int groupId, String title, String body, String icon, String path, String pathData) {
         return findFcmTokensByGroupId(groupId)
                 .flatMap(fcmToken -> {
-                    FcmSendDto fcmsendDto = new FcmSendDto(fcmToken.getToken(), title, body);
+                    FcmSendDto fcmsendDto = new FcmSendDto(fcmToken.getToken(), title, body, icon, path, pathData);
                     return sendMessageTo(fcmsendDto);
                 })
                 .collectList()
