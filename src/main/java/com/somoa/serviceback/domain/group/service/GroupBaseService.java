@@ -42,4 +42,8 @@ public abstract class GroupBaseService {
 	protected Mono<GroupUser> findGroupManager(Integer groupId) {
 		return groupUserRepository.findGroupManager(groupId);
 	}
+
+	protected Mono<Integer> countJoinGroup(Integer userId) {
+		return groupUserRepository.countJoinGroup(userId);
+	}
 }

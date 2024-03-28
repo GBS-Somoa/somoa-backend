@@ -33,16 +33,17 @@ public class GroupManagementService extends GroupBaseService {
         return groupRepository.save(Group.builder()
                         .name(param.getGroupName())
                         .build())
-                .flatMap(savedGroup -> {
-                    GroupUser groupUser = GroupUser.builder()
-                            .groupId(savedGroup.getId())
-                            .userId(userId)
-                            .role(GroupUserRole.MANAGER)
-                            .orderedNum(0)  // TODO: orderNum 맨 마지막으로 할당해야 함
-                            .alarm(true)
-                            .build();
-                    return groupUserRepository.save(groupUser);
-                })
+                .flatMap(savedGroup -> countJoinGroup(userId)
+                        .flatMap(groupCount -> {
+                            GroupUser groupUser = GroupUser.builder()
+                                    .groupId(savedGroup.getId())
+                                    .userId(userId)
+                                    .role(GroupUserRole.MANAGER)
+                                    .orderedNum(groupCount)
+                                    .alarm(true)
+                                    .build();
+                            return groupUserRepository.save(groupUser);
+                        }))
                 .map(groupUser -> {
                     Map<String, Object> data = new HashMap<>();
                     data.put("groupId", groupUser.getGroupId());

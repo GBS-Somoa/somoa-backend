@@ -55,14 +55,15 @@ public class GroupUserService extends GroupBaseService {
                         if (userExists) {
                             return Mono.error(new GroupException(GroupErrorCode.USER_ALREADY_IN_GROUP));
                         } else {
-                            return Mono.defer(() -> groupUserRepository.save(GroupUser.builder()
-                                    .groupId(groupId)
-                                    .userId(userId)
-                                    .role(GroupUserRole.USER_ALL)
-                                    .orderedNum(0)  // TODO: orderNum 맨 마지막으로 할당해야 함
-                                    .alarm(true)
-                                    .build())
-                                .map(GroupUser::getId));
+                            return Mono.defer(() -> countJoinGroup(userId)
+                                    .flatMap(groupCount -> groupUserRepository.save(GroupUser.builder()
+                                                    .groupId(groupId)
+                                                    .userId(userId)
+                                                    .role(GroupUserRole.USER_ALL)
+                                                    .orderedNum(groupCount)
+                                                    .alarm(true)
+                                                    .build())
+                                            .map(GroupUser::getId)));
                         }
                     })))
             .switchIfEmpty(Mono.defer(() -> Mono.error(new IllegalArgumentException("존재하지 않는 유저입니다."))));
