@@ -176,16 +176,17 @@ public class SupplyService {
 
 
     public Mono<Boolean> updateSupply(String supplyId, Integer supplyAmount) {
-        return supplyRepository.findById(supplyId).flatMap(supply -> {
-            if (supply.getDetails().containsKey("supplyAmount")) {
-                supply.getDetails().put("supplyAmount", supplyAmount);
-                return supplyRepository.save(supply).map(savedSupply -> true);
-            } else {
-                return Mono.error(new RuntimeException("소모용량이 없는 소모품입니다."));
-            }
-        }).defaultIfEmpty(false);
+        return supplyRepository.findById(supplyId)
+                .switchIfEmpty(Mono.error(new RuntimeException("존재하지 않는 소모품 ID입니다.")))
+                .flatMap(supply -> {
+                    if (supply.getDetails().containsKey("supplyAmount")) {
+                        supply.getDetails().put("supplyAmount", supplyAmount);
+                        return supplyRepository.save(supply).map(savedSupply -> true);
+                    } else {
+                        return Mono.error(new RuntimeException("소모용량이 없는 소모품입니다."));
+                    }
+                });
     }
-
 
     public static boolean isCareNeeded(Supply supply) {
         Map<String, Object> details = supply.getDetails();
