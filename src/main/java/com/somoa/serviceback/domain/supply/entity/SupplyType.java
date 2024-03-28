@@ -16,6 +16,9 @@ public class SupplyType {
     public static final String FABRIC_SOFTENER = "fabricSoftener";
     public static final String DISH_RINSE = "dishRinse";
 
+    /**
+     *  필터류의 status는  별도로 지정해야함.
+     */
     private static final Map<String, Object> defaultLimits = new HashMap<>() {{
         put(REPLACEABLE_FILTER, 365);
         put(CLEANABLE_FILTER, FilterStatus.BAD);

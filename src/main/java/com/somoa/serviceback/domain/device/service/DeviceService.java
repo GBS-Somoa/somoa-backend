@@ -104,21 +104,21 @@ public class DeviceService {
             switch (detail) {
                 case "supplyAmount":
                     amountFlag = true;
-                    details.put("supplyAmount", 0);
-                    supplyLimit.put("supplyAmount", 0); // 기본값 0 -> 알람안뜨게설정
+                    details.put("supplyAmount",  SupplyType.getDefaultDetail(param.getType()));
+                    supplyLimit.put("supplyAmount", SupplyType.getDefaultLimit(param.getType())); // 기본값 0 -> 알람안뜨게설정
                     break;
                 case "supplyStatus":
                     if (param.getDetails().contains("supplyChangeDate")) { // 필터류 상태
-                        details.put("supplyStatus", "good"); // 기본값 "good"
+                        details.put("supplyStatus",  "good"); // 기본값 "good"
                         supplyLimit.put("supplyStatus", "bad"); // 기본값 "null" -> 알람안뜨게설정
                     } else { // 단일 소모품 상태(봉투 등)
-                        details.put("supplyStatus", 10); // 기본값 "good"
-                        supplyLimit.put("supplyStatus", 8); // 기본값 "null" -> 알람안뜨게설정
+                        details.put("supplyStatus",  SupplyType.getDefaultDetail(param.getType()));
+                        supplyLimit.put("supplyStatus", SupplyType.getDefaultLimit(param.getType()));
                     }
                     break;
                 case "supplyChangeDate":
                     details.put("supplyChangeDate",Instant.now());
-                    supplyLimit.put("supplyChangeDate", 365); // 기본값 365일
+                    supplyLimit.put("supplyChangeDate", SupplyType.getDefaultLimit(param.getType())); // 기본값 365일
                     break;
                 case "supplyLevel":
                     details.put("supplyLevel", SupplyType.getDefaultDetail(param.getType()));
@@ -133,7 +133,7 @@ public class DeviceService {
                 .supplyLimit(supplyLimit);
 
         if (amountFlag) {
-            builder.amountTmp(0);
+            builder.supplyAmountTmp(0);
         }
         Supply newSupply = builder.build();
 

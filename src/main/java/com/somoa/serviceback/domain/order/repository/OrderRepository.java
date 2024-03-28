@@ -24,4 +24,12 @@ public interface OrderRepository extends ReactiveCrudRepository<Order, Integer> 
             "INNER JOIN `group_user` gu ON gu.group_id = g.group_id " + // 테이블 이름을 정확히 수정하세요.
             "WHERE gu.user_id = :userId")
     Flux<OrderWithGroupnameResponse> findByUserIdWithGroupName(Integer userId);
+
+    @Query("SELECT * " +
+            "   FROM `order` " +
+            "  WHERE supply_id = :supplyId" +
+            "  ORDER BY created_at DESC" +
+            "  LIMIT 1")
+    Mono<Order> findLatestOrderBySupplyId(String supplyId);
+
 }
