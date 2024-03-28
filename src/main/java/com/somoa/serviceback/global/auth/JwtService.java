@@ -47,7 +47,7 @@ public class JwtService {
                     .setSubject(userInfo.getUsername())
                     .claim("id", userInfo.getId())
                     .setIssuedAt(Date.from(Instant.now()))
-                    .setExpiration(Date.from(Instant.now().plus(15, ChronoUnit.MINUTES)))
+                    .setExpiration(Date.from(Instant.now().plus(3, ChronoUnit.HOURS)))
                     .signWith(this.accessKey)
                     .compact();
 
