@@ -71,4 +71,23 @@ public class SupplyType {
         }
         return false;
     }
+
+    public static String getActionForType(String type) {
+        switch (type) {
+            case REPLACEABLE_FILTER:
+                return "replace";
+            case CLEANABLE_FILTER:
+            case DRAIN_TANK:
+            case DUST_BIN:
+                return "clean";
+            case SUPPLY_TANK:
+            case WASHER_DETERGENT:
+            case DISH_DETERGENT:
+            case FABRIC_SOFTENER:
+            case DISH_RINSE:
+                return "charge";
+            default:
+                return "null";
+        }
+    }
 }
