@@ -160,9 +160,4 @@ public class OrderService {
                 .collectList();
     }
 
-    public Mono<OrderResponse> findLatestOrder(String supplyId) {
-        return orderRepository.findLatestOrderBySupplyId(supplyId)
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("해당 소모품에 대한 주문이 없습니다.")))
-                .map(OrderResponse::of);
-    }
 }
