@@ -21,6 +21,9 @@ public class Order {
     @Column("group_id")
     private int groupId;
 
+    @Column("user_id")
+    private Integer userId;
+
     @Column("supply_id")
     private String supplyId;
 
@@ -49,5 +52,5 @@ public class Order {
     private LocalDateTime createdAt;
 
     @Column("updated_at")
-    private LocalDateTime  updatedAt;
+    private LocalDateTime updatedAt;
 }
