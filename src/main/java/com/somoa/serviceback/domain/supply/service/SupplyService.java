@@ -149,7 +149,7 @@ public class SupplyService {
                         if(deviceIds.isEmpty()){return Mono.just(resultMap);}
                 return deviceSupplyRepository.findDistinctSuppliesByDeviceIds(deviceIds).flatMap(supplyWithGroupInfo -> {
                     if (!processedSupplyIds.add(supplyWithGroupInfo.getSupplyId())) { // 중복 supplyId 제거
-                        return Mono.just(resultMap);
+                        return Mono.empty();
                     }
                     return supplyRepository.findById(supplyWithGroupInfo.getSupplyId()).map(supply -> {
                         Map<String, Object> supplyData = new HashMap<>();
@@ -174,9 +174,12 @@ public class SupplyService {
                             ((Map<String, ArrayList<Object>>) supplyDataMap.get("isCareNotNeeded")).get(action).add(supplyData);
                         }
                         totalCount.incrementAndGet();
+                        System.out.println(supplyData);
+                        System.out.println(supplyDataMap);
                         return supplyData;
                     });
-                }).collectList().flatMap(list -> {
+                }).collectList()
+                .flatMap(list -> {
                     resultMap.put("totalCount", totalCount.intValue());
                     resultMap.put("isCareNeeded", supplyDataMap.get("isCareNeeded"));
                     resultMap.put("isCareNotNeeded", supplyDataMap.get("isCareNotNeeded"));
