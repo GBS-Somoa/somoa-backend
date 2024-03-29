@@ -55,13 +55,12 @@ public class SupplyService {
         Map<String, Object> resultMap = new HashMap<>();
         Map<String, Object> supplyDataMap = new HashMap<>();
         Map<String, ArrayList<Object>> careNeeded = new HashMap<>();
-        careNeeded.put("clean", new ArrayList<>());
-        careNeeded.put("replace", new ArrayList<>());
-        careNeeded.put("charge", new ArrayList<>());
         Map<String, ArrayList<Object>> careNotNeeded = new HashMap<>();
-        careNotNeeded.put("clean", new ArrayList<>());
-        careNotNeeded.put("replace", new ArrayList<>());
-        careNotNeeded.put("charge", new ArrayList<>());
+        for (String action : SupplyType.getActions()) {
+            careNeeded.put(action, new ArrayList<>());
+            careNotNeeded.put(action, new ArrayList<>());
+        }
+
         supplyDataMap.put("isCareNeeded", careNeeded);
         supplyDataMap.put("isCareNotNeeded", careNotNeeded);
         AtomicInteger totalCount = new AtomicInteger(0);
@@ -119,14 +118,11 @@ public class SupplyService {
         Map<String, Object> resultMap = new HashMap<>();
         Map<String, Object> supplyDataMap = new HashMap<>();
         Map<String, ArrayList<Object>> careNeeded = new HashMap<>();
-        careNeeded.put("clean", new ArrayList<>());
-        careNeeded.put("replace", new ArrayList<>());
-        careNeeded.put("charge", new ArrayList<>());
-
         Map<String, ArrayList<Object>> careNotNeeded = new HashMap<>();
-        careNotNeeded.put("clean", new ArrayList<>());
-        careNotNeeded.put("replace", new ArrayList<>());
-        careNotNeeded.put("charge", new ArrayList<>());
+        for (String action : SupplyType.getActions()) {
+            careNeeded.put(action, new ArrayList<>());
+            careNotNeeded.put(action, new ArrayList<>());
+        }
 
         supplyDataMap.put("isCareNeeded", careNeeded);
         supplyDataMap.put("isCareNotNeeded", careNotNeeded);
