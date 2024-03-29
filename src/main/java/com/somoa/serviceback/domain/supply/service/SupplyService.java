@@ -11,6 +11,7 @@ import com.somoa.serviceback.domain.supply.repository.SupplyRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
@@ -53,21 +54,7 @@ public class SupplyService {
 
     public Mono<Object> searchAllGroupSupply(Integer userId,Integer groupId) {
         Map<String, Object> resultMap = new HashMap<>();
-        Map<String, Object> supplyDataMap = new HashMap<>();
-        Map<String, ArrayList<Object>> careNeeded = new HashMap<>();
-        Map<String, ArrayList<Object>> careNotNeeded = new HashMap<>();
-        for (String action : SupplyType.getActions()) {
-            careNeeded.put(action, new ArrayList<>());
-            careNotNeeded.put(action, new ArrayList<>());
-        }
-
-        supplyDataMap.put("isCareNeeded", careNeeded);
-        supplyDataMap.put("isCareNotNeeded", careNotNeeded);
-
         resultMap.put("totalCount", 0); // 초기 totalCount 값 설정
-        resultMap.put("isCareNeeded", careNeeded);
-        resultMap.put("isCareNotNeeded", careNotNeeded);
-
         AtomicInteger totalCount = new AtomicInteger(0);
 
         Set<String> processedSupplyIds = new HashSet<>(); // 중복된 supplyId를 추적하기 위한 Set
@@ -96,48 +83,44 @@ public class SupplyService {
                         if (supply.getSupplyAmountTmp() != null) {
                             supplyData.put("supplyAmountTmp", supply.getSupplyAmountTmp());
                         }
-                        // 관리 필요 여부 판단
                         boolean careNeededcheck = isCareNeeded(supply);
-
-                        String action = SupplyType.getActionForType(supply.getType());
-                        if (!careNeededcheck) {
-                            ((Map<String, ArrayList<Object>>) supplyDataMap.get("isCareNeeded")).get(action).add(supplyData);
-                        } else {
-                            ((Map<String, ArrayList<Object>>) supplyDataMap.get("isCareNotNeeded")).get(action).add(supplyData);
-                        }
                         totalCount.incrementAndGet();
-                        return supplyData;
+
+                        return  Pair.of(careNeededcheck, supplyData);
                     });
                 }).collectList().flatMap(list -> {
+                    Map<String, ArrayList<Object>> careNeeded = new HashMap<>();
+                    Map<String, ArrayList<Object>> careNotNeeded = new HashMap<>();
+                    for (String action : SupplyType.getActions()) {
+                        careNeeded.put(action, new ArrayList<>());
+                        careNotNeeded.put(action, new ArrayList<>());
+                    }
+                    resultMap.put("isCareNeeded", careNeeded);
+                    resultMap.put("isCareNotNeeded", careNotNeeded);
                     resultMap.put("totalCount", totalCount.intValue());
-                    resultMap.put("isCareNeeded", supplyDataMap.get("isCareNeeded"));
-                    resultMap.put("isCareNotNeeded", supplyDataMap.get("isCareNotNeeded"));
 
+                    for (Pair pair : list) {
+                        boolean careNeededcheck = (boolean) pair.getFirst();
+                        Map<String, Object> supplyData = (Map<String, Object>) pair.getSecond();
+
+                        String action = SupplyType.getActionForType((String) supplyData.get("supplyType"));
+                        if (careNeededcheck) {
+                            ((Map<String, ArrayList<Object>>) resultMap.get("isCareNeeded")).get(action).add(supplyData);
+                        } else {
+                            ((Map<String, ArrayList<Object>>) resultMap.get("isCareNotNeeded")).get(action).add(supplyData);
+                        }
+                    }
 
                     return Mono.just(resultMap);
-                }); // 최종 결과 반환
+                });
             });
         });
     }
 
     public Mono<Object> searchAllSupply(Integer userId) {
         Map<String, Object> resultMap = new HashMap<>();
-        Map<String, Object> supplyDataMap = new HashMap<>();
-        Map<String, ArrayList<Object>> careNeeded = new HashMap<>();
-        Map<String, ArrayList<Object>> careNotNeeded = new HashMap<>();
-        for (String action : SupplyType.getActions()) {
-            careNeeded.put(action, new ArrayList<>());
-            careNotNeeded.put(action, new ArrayList<>());
-        }
-
-        supplyDataMap.put("isCareNeeded", careNeeded);
-        supplyDataMap.put("isCareNotNeeded", careNotNeeded);
-
 
         resultMap.put("totalCount", 0); // 초기 totalCount 값 설정
-        resultMap.put("isCareNeeded", careNeeded);
-        resultMap.put("isCareNotNeeded", careNotNeeded);
-
         AtomicInteger totalCount = new AtomicInteger(0);
         Set<String> processedSupplyIds = new HashSet<>(); // 중복된 supplyId를 추적하기 위한 Set
 
@@ -167,24 +150,31 @@ public class SupplyService {
                             supplyData.put("supplyAmountTmp", supply.getSupplyAmountTmp());
                         }
                         boolean careNeededcheck = isCareNeeded(supply);
-                        String action = SupplyType.getActionForType(supply.getType());
-                        if (!careNeededcheck) {
-                            ((Map<String, ArrayList<Object>>) supplyDataMap.get("isCareNeeded")).get(action).add(supplyData);
-                        } else {
-                            ((Map<String, ArrayList<Object>>) supplyDataMap.get("isCareNotNeeded")).get(action).add(supplyData);
-                        }
                         totalCount.incrementAndGet();
-                        System.out.println(supplyData);
-                        System.out.println(supplyDataMap);
-                        return supplyData;
+                        return  Pair.of(careNeededcheck, supplyData);
                     });
                 }).collectList()
                 .flatMap(list -> {
+                    Map<String, ArrayList<Object>> careNeeded = new HashMap<>();
+                    Map<String, ArrayList<Object>> careNotNeeded = new HashMap<>();
+                    for (String action : SupplyType.getActions()) {
+                        careNeeded.put(action, new ArrayList<>());
+                        careNotNeeded.put(action, new ArrayList<>());
+                    }
+                    resultMap.put("isCareNeeded", careNeeded);
+                    resultMap.put("isCareNotNeeded", careNotNeeded);
                     resultMap.put("totalCount", totalCount.intValue());
-                    resultMap.put("isCareNeeded", supplyDataMap.get("isCareNeeded"));
-                    resultMap.put("isCareNotNeeded", supplyDataMap.get("isCareNotNeeded"));
 
-
+                    for (Pair pair : list) {
+                        boolean careNeededcheck = (boolean) pair.getFirst();
+                        Map<String, Object> supplyData = (Map<String, Object>) pair.getSecond();
+                        String action = SupplyType.getActionForType((String) supplyData.get("supplyType"));
+                        if (careNeededcheck) {
+                            ((Map<String, ArrayList<Object>>) resultMap.get("isCareNeeded")).get(action).add(supplyData);
+                        } else {
+                            ((Map<String, ArrayList<Object>>) resultMap.get("isCareNotNeeded")).get(action).add(supplyData);
+                        }
+                    }
                     return Mono.just(resultMap);
                 });
             });
