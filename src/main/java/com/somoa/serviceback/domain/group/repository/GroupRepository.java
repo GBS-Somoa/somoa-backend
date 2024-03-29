@@ -5,6 +5,7 @@ import com.somoa.serviceback.domain.group.entity.Group;
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 public interface GroupRepository extends ReactiveCrudRepository<Group, Integer> {
 
@@ -22,4 +23,7 @@ public interface GroupRepository extends ReactiveCrudRepository<Group, Integer> 
 		+ "  WHERE gu.user_id = :userId "
 		+ "  ORDER BY gu.ordered_num ASC ")
 	Flux<GroupResponse> findAllByUserId(Integer userId);
+
+	@Query("SELECT g.group_name  FROM `group` g WHERE g.group_id = :groupId")
+	Mono<String> findGroupNameBygroupId(Integer groupId);
 }

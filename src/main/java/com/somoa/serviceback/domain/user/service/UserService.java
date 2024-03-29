@@ -1,6 +1,7 @@
 package com.somoa.serviceback.domain.user.service;
 
 import com.somoa.serviceback.domain.device.repository.DeviceRepository;
+import com.somoa.serviceback.domain.group.repository.GroupRepository;
 import com.somoa.serviceback.domain.order.dto.OrderWithGroupnameResponse;
 import com.somoa.serviceback.domain.order.repository.OrderRepository;
 import com.somoa.serviceback.domain.user.dto.UserSignupDto;
@@ -30,6 +31,7 @@ public class UserService {
     private final JwtService jwtService;
     private final OrderRepository orderRepository;
     private final DeviceRepository deviceRepository;
+    private final GroupRepository groupRepository;
 
     public Mono<Map<String, Object>> loginUser(String username, String password) {
         // UserRepository를 사용하여 사용자 인증 진행
@@ -89,15 +91,15 @@ public class UserService {
     @Transactional(readOnly=true)
     public Mono<List<OrderWithGroupnameResponse>> getOrders(Integer loginUserId) {
         return orderRepository.findByUserIdWithGroupName(loginUserId)
-                .flatMap(orderResponse -> {
-                    return deviceRepository.findFirstDeviceBySupplyId(orderResponse.getSupplyId())
-                            .map(device -> {
-                                orderResponse.setDeviceId(device.getId());
-                                orderResponse.setDeviceName(device.getNickname());
-                                return orderResponse;
-                            })
-                            .defaultIfEmpty(orderResponse); // Device 정보가 없는 경우, 기존 OrderWithGroupnameResponse 객체 반환
-                })
-                .collectList();
+                .flatMap(orderResponse -> deviceRepository.findFirstDeviceBySupplyId(orderResponse.getSupplyId())
+                        .flatMap(device -> groupRepository.findGroupNameBygroupId(device.getGroupId())
+                                .map(groupName -> {
+                                    orderResponse.setDeviceId(device.getId());
+                                    orderResponse.setDeviceName(device.getNickname());
+                                    orderResponse.setGroupName(groupName);
+                                    return orderResponse;
+                                }))
+                        .defaultIfEmpty(orderResponse)) // Device 정보가 없는 경우, 기존 OrderWithGroupnameResponse 객체 반환
+                .collectList(); // 모든 OrderWithGroupnameResponse 객체를 리스트로 수집
     }
 }

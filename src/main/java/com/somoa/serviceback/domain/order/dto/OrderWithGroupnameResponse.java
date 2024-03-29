@@ -15,6 +15,7 @@ public class OrderWithGroupnameResponse {
     private Integer orderId;
     private String deviceId;
     private String deviceName;
+    private String groupName;
     private String supplyId;
     private String orderStatus;
     private String orderStore;
