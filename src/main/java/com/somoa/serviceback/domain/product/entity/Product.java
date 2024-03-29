@@ -16,17 +16,14 @@ import org.springframework.data.relational.core.mapping.Table;
 public class Product {
 
     @Id
-    @Column("product_id")
-    private Integer id;
+    @Column("product_barcode")
+    private String barcode;
 
     @Column("product_name")
     private String name;
 
     @Column("product_amount")
     private String amount;
-
-    @Column("product_barcode")
-    private String barcode;
 
     @Column("product_price")
     private int price;
