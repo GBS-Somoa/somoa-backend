@@ -45,6 +45,16 @@ public class SupplyType {
         put(DISH_RINSE, 0);
     }};
 
+    private static final String[] Action = {
+            "change", "clean", "add"
+    };
+
+    // 나머지 클래스 내용...
+
+    public static String[] getActions() {
+        return Action.clone(); // 배열의 복사본을 반환
+    }
+
     private static final List<String> filterTypes = Arrays.asList(REPLACEABLE_FILTER, CLEANABLE_FILTER);
 
 
@@ -99,20 +109,21 @@ public class SupplyType {
         }
     }
 
+
     public static String getActionForType(String type) {
         switch (type) {
             case REPLACEABLE_FILTER:
-                return "change";
+                return Action[0];
             case CLEANABLE_FILTER:
             case DRAIN_TANK:
             case DUST_BIN:
-                return "clean";
+                return Action[1];
             case SUPPLY_TANK:
             case WASHER_DETERGENT:
             case DISH_DETERGENT:
             case FABRIC_SOFTENER:
             case DISH_RINSE:
-                return "add";
+                return Action[2];
             default:
                 return "null";
         }
