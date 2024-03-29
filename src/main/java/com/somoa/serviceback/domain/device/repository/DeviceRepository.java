@@ -32,6 +32,7 @@ public interface DeviceRepository extends ReactiveCrudRepository<Device, String>
     @Query("SELECT device_id FROM device WHERE group_id IN (:groupIds)")
     Flux<String> findDeviceIdsByGroupIds(List<Integer> groupIds);
 
+    @Query("SELECT * FROM device WHERE group_id =:groupId ORDER BY created_at ASC")
     Flux<Device> findAllByGroupId(Integer groupId);
 
     @Query("SELECT device_id FROM device WHERE group_id = :groupId")
