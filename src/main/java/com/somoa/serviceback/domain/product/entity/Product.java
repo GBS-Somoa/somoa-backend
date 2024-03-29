@@ -17,7 +17,7 @@ public class Product {
 
     @Id
     @Column("product_id")
-    private int id;
+    private Integer id;
 
     @Column("product_name")
     private String name;
