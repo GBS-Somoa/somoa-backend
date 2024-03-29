@@ -21,6 +21,9 @@ public class Order {
     @Column("group_id")
     private int groupId;
 
+    @Column("user_id")
+    private int userId;
+
     @Column("supply_id")
     private String supplyId;
 
