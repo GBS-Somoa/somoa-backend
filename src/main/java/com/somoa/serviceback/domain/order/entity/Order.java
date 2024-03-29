@@ -52,5 +52,5 @@ public class Order {
     private LocalDateTime createdAt;
 
     @Column("updated_at")
-    private LocalDateTime updatedAt;
+    private LocalDateTime  updatedAt;
 }
