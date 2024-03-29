@@ -63,6 +63,11 @@ public class SupplyService {
 
         supplyDataMap.put("isCareNeeded", careNeeded);
         supplyDataMap.put("isCareNotNeeded", careNotNeeded);
+
+        resultMap.put("totalCount", 0); // 초기 totalCount 값 설정
+        resultMap.put("isCareNeeded", careNeeded);
+        resultMap.put("isCareNotNeeded", careNotNeeded);
+
         AtomicInteger totalCount = new AtomicInteger(0);
 
         Set<String> processedSupplyIds = new HashSet<>(); // 중복된 supplyId를 추적하기 위한 Set
@@ -71,6 +76,7 @@ public class SupplyService {
                 return Mono.error(new RuntimeException("속한 그룹이 아닙니다!"));
             }
             return deviceRepository.findDeviceIdsByGroupId(groupId).collectList().flatMap(deviceIds -> {
+                if(deviceIds.isEmpty()){return Mono.just(resultMap);}
                 return deviceSupplyRepository.findDistinctSuppliesByDeviceIds(deviceIds).flatMap(supplyWithGroupInfo -> {
                     if (!processedSupplyIds.add(supplyWithGroupInfo.getSupplyId())) {
                         return Mono.empty();
@@ -127,12 +133,20 @@ public class SupplyService {
         supplyDataMap.put("isCareNeeded", careNeeded);
         supplyDataMap.put("isCareNotNeeded", careNotNeeded);
 
-        AtomicInteger totalCount = new AtomicInteger(0);
 
+        resultMap.put("totalCount", 0); // 초기 totalCount 값 설정
+        resultMap.put("isCareNeeded", careNeeded);
+        resultMap.put("isCareNotNeeded", careNotNeeded);
+
+        AtomicInteger totalCount = new AtomicInteger(0);
         Set<String> processedSupplyIds = new HashSet<>(); // 중복된 supplyId를 추적하기 위한 Set
 
-        return groupUserRepository.findGroupIdsByUserId(userId).collectList().flatMap(groupIds -> {
-            return deviceRepository.findDeviceIdsByGroupIds(groupIds).collectList().flatMap(deviceIds -> {
+        return groupUserRepository.findGroupIdsByUserId(userId).collectList().
+                flatMap(groupIds -> {
+                    if(groupIds.isEmpty()){return Mono.just(resultMap);}
+            return deviceRepository.findDeviceIdsByGroupIds(groupIds)
+                    .collectList().flatMap(deviceIds -> {
+                        if(deviceIds.isEmpty()){return Mono.just(resultMap);}
                 return deviceSupplyRepository.findDistinctSuppliesByDeviceIds(deviceIds).flatMap(supplyWithGroupInfo -> {
                     if (!processedSupplyIds.add(supplyWithGroupInfo.getSupplyId())) { // 중복 supplyId 제거
                         return Mono.empty();
@@ -160,9 +174,12 @@ public class SupplyService {
                             ((Map<String, ArrayList<Object>>) supplyDataMap.get("isCareNotNeeded")).get(action).add(supplyData);
                         }
                         totalCount.incrementAndGet();
+                        System.out.println(supplyData);
+                        System.out.println(supplyDataMap);
                         return supplyData;
                     });
-                }).collectList().flatMap(list -> {
+                }).collectList()
+                .flatMap(list -> {
                     resultMap.put("totalCount", totalCount.intValue());
                     resultMap.put("isCareNeeded", supplyDataMap.get("isCareNeeded"));
                     resultMap.put("isCareNotNeeded", supplyDataMap.get("isCareNotNeeded"));

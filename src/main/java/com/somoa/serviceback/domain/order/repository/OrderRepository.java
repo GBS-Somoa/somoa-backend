@@ -23,7 +23,9 @@ public interface OrderRepository extends ReactiveCrudRepository<Order, Integer> 
             "FROM `order` o " +
             "INNER JOIN `group` g ON o.group_id = g.group_id " +
             "INNER JOIN `group_user` gu ON gu.group_id = g.group_id " +
-            "WHERE gu.user_id = :userId")
+            "WHERE gu.user_id = :userId " +
+            "AND (o.order_status = '배송 중' OR o.order_status = '주문 완료') " +
+            "ORDER BY o.created_at DESC")
     Flux<OrderWithGroupnameResponse> findByUserIdWithGroupName(Integer userId);
 
     @Query("SELECT * " +

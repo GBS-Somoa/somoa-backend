@@ -6,12 +6,13 @@ import lombok.Data;
 public class OrderSaveDto {
 
     private Integer groupId;
+    private Integer userId;
     private String supplyId;
     private String orderStatus;
-    private String productName;
     private String orderStore;
     private String orderStoreId;
-    private String productImg;
     private Integer orderCount;
-    private String orderAmount;
+    private String productName;
+    private String productImg;
+    private String productBarcode;
 }

@@ -269,11 +269,19 @@ public class DeviceService {
                 );
     }
 
+    /**
+     *
+     * Todo: 그룹에서 관리되는넘 -> Type만 비교, 나머지는 name과 Type 비교
+     * @param supplyId
+     * @param supplyStatusParams
+     * @param group
+     * @return
+     */
     @Transactional
     private Mono<Void> updateSupplyDetails(String supplyId, List<SupplyStatusParam> supplyStatusParams, Group group) {
         return supplyRepository.findById(supplyId)
                 .flatMap(supply -> Flux.fromIterable(supplyStatusParams)
-                        .filter(param -> supply.getName().equals(param.getName()) && supply.getType().equals(param.getType()))
+                        .filter(param -> (SupplyType.isLiquidType(supply.getType())&&supply.getType().equals(param.getType()))||(supply.getName().equals(param.getName()) && supply.getType().equals(param.getType())))
                         .next() // 첫 번째 일치하는 요소를 가져옴
                         .flatMap(param -> updateSupply(supply, param)) // 비동기적으로 updateSupply 실행
                         .flatMap(supplyRepository::save) // 업데이트된 Supply 저장

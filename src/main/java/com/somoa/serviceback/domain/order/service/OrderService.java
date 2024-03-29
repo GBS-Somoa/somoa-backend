@@ -1,6 +1,7 @@
 package com.somoa.serviceback.domain.order.service;
 
 import com.somoa.serviceback.domain.order.dto.OrderResponse;
+import com.somoa.serviceback.domain.product.repository.ProductRepository;
 import com.somoa.serviceback.domain.supply.repository.DeviceSupplyRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,15 +30,22 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final SupplyRepository supplyRepository;
     private final DeviceSupplyRepository deviceSupplyRepository;
+    private final ProductRepository productRepository;
     final FcmService fcmService;
 
     public int parseOrderAmount(String orderAmount) {
         if (orderAmount.endsWith("L")) {
             String amountInLiters = orderAmount.substring(0, orderAmount.length() - 1);
-            return Integer.parseInt(amountInLiters) * 1000;
+            return (int)(Double.parseDouble(amountInLiters) * 1000);
         } else if (orderAmount.endsWith("ml")) {
             String amountInMilliliters = orderAmount.substring(0, orderAmount.length() - 2);
-            return Integer.parseInt(amountInMilliliters);
+            return (int)Double.parseDouble(amountInMilliliters);
+        } else if(orderAmount.endsWith("kg") || orderAmount.endsWith("KG")){
+            String amountInKilograms = orderAmount.substring(0, orderAmount.length() - 2);
+            return (int)(Double.parseDouble(amountInKilograms) * 1000);
+        } else if(orderAmount.endsWith("g") || orderAmount.endsWith("G")){
+            String amountInGrams = orderAmount.substring(0, orderAmount.length() - 1);
+            return (int)Double.parseDouble(amountInGrams);
         } else {
             throw new IllegalArgumentException("Invalid order amount: " + orderAmount);
         }
@@ -45,21 +53,25 @@ public class OrderService {
 
     @Transactional
     public Mono<Map<String, Object>> saveOrder(OrderSaveDto orderSaveDto) {
-        return orderRepository.findByOrderStoreIdAndOrderStore(orderSaveDto.getOrderStoreId(), orderSaveDto.getOrderStore())
-                .hasElement()
-                .filter(exists -> !exists)
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("이미 등록된 주문입니다.")))
-                .then(orderRepository.save(Order.builder()
-                        .groupId(orderSaveDto.getGroupId())
-                        .supplyId(orderSaveDto.getSupplyId())
-                        .orderStatus(orderSaveDto.getOrderStatus())
-                        .productName(orderSaveDto.getProductName())
-                        .orderStore(orderSaveDto.getOrderStore())
-                        .orderStoreId(orderSaveDto.getOrderStoreId())
-                        .productImg(orderSaveDto.getProductImg())
-                        .orderCount(orderSaveDto.getOrderCount())
-                        .orderAmount(orderSaveDto.getOrderAmount())
-                        .build()))
+        return productRepository.findByBarcode(orderSaveDto.getProductBarcode())
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("제품을 찾을 수 없습니다.")))
+                .flatMap(product -> orderRepository.findByOrderStoreIdAndOrderStore(orderSaveDto.getOrderStoreId(), orderSaveDto.getOrderStore())
+                        .hasElement()
+                        .filter(exists -> !exists)
+                        .switchIfEmpty(Mono.error(new IllegalArgumentException("이미 등록된 주문입니다.")))
+                        .then(orderRepository.save(Order.builder()
+                                .groupId(orderSaveDto.getGroupId())
+                                .userId(orderSaveDto.getUserId())
+                                .supplyId(orderSaveDto.getSupplyId())
+                                .orderStatus(orderSaveDto.getOrderStatus())
+                                .productName(orderSaveDto.getProductName())
+                                .orderStore(orderSaveDto.getOrderStore())
+                                .orderStoreId(orderSaveDto.getOrderStoreId())
+                                .productImg(orderSaveDto.getProductImg())
+                                .orderCount(orderSaveDto.getOrderCount())
+                                // 제품 리포지토리에서 조회한 amount를 주문에 설정
+                                .orderAmount(product.getAmount())
+                                .build()))
                 .flatMap(order -> {
                     return supplyRepository.findById(order.getSupplyId())
                             .switchIfEmpty(Mono.error(new IllegalArgumentException("소모품을 찾을 수 없습니다.")))
@@ -85,7 +97,7 @@ public class OrderService {
                     Map<String, Object> response = new HashMap<>();
                     response.put("id", order.getId());
                     return response;
-                });
+                }));
     }
 
     @Transactional
@@ -95,6 +107,7 @@ public class OrderService {
                     Order updatedOrder = Order.builder()
                             .id(order.getId())
                             .groupId(order.getGroupId())
+                            .userId(order.getUserId())
                             .supplyId(order.getSupplyId())
                             .orderStatus(orderStatusUpdateDto.getOrderStatus())
                             .productName(order.getProductName())
@@ -103,6 +116,7 @@ public class OrderService {
                             .productImg(order.getProductImg())
                             .orderCount(order.getOrderCount())
                             .orderAmount(order.getOrderAmount())
+                            .createdAt(order.getCreatedAt())
                             .build();
                     return orderRepository.save(updatedOrder);
                 })
