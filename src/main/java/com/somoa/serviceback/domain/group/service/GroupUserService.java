@@ -93,7 +93,7 @@ public class GroupUserService extends GroupBaseService {
         return findGroup(groupId)
             .flatMap(group -> findGroupManager(groupId)
                 .flatMap(groupManager -> {
-                    if (!groupManager.getId().equals(userId)) {
+                    if (!groupManager.getUserId().equals(userId)) {
                         return Mono.error(new GroupException(GroupErrorCode.NO_GROUP_MANAGEMENT_PERMISSION));
                     }
                     return findGroupUser(groupId, targetUserId)
