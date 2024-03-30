@@ -55,6 +55,15 @@ public class SupplyService {
     public Mono<Object> searchAllGroupSupply(Integer userId,Integer groupId) {
         Map<String, Object> resultMap = new HashMap<>();
         resultMap.put("totalCount", 0);
+        Map<String, ArrayList<Object>> careNeeded = new HashMap<>();
+        Map<String, ArrayList<Object>> careNotNeeded = new HashMap<>();
+        for (String action : SupplyType.getActions()) {
+            careNeeded.put(action, new ArrayList<>());
+            careNotNeeded.put(action, new ArrayList<>());
+        }
+        resultMap.put("isCareNeeded", careNeeded);
+        resultMap.put("isCareNotNeeded", careNotNeeded);
+
         AtomicInteger totalCount = new AtomicInteger(0);
 
         Set<String> processedSupplyIds = new HashSet<>();
@@ -92,14 +101,6 @@ public class SupplyService {
                             .sorted(Comparator.comparing(pair -> (String) pair.getSecond().get("supplyId")))
                             .collect(Collectors.toList());
 
-                    Map<String, ArrayList<Object>> careNeeded = new HashMap<>();
-                    Map<String, ArrayList<Object>> careNotNeeded = new HashMap<>();
-                    for (String action : SupplyType.getActions()) {
-                        careNeeded.put(action, new ArrayList<>());
-                        careNotNeeded.put(action, new ArrayList<>());
-                    }
-                    resultMap.put("isCareNeeded", careNeeded);
-                    resultMap.put("isCareNotNeeded", careNotNeeded);
                     resultMap.put("totalCount", totalCount.intValue());
                     for (Pair<Boolean, Map<String, Object>> pair : sortedList) {
                         boolean careNeededcheck = pair.getFirst();
@@ -120,6 +121,15 @@ public class SupplyService {
     public Mono<Object> searchAllSupply(Integer userId) {
         Map<String, Object> resultMap = new HashMap<>();
         resultMap.put("totalCount", 0);
+        Map<String, ArrayList<Object>> careNeeded = new HashMap<>();
+        Map<String, ArrayList<Object>> careNotNeeded = new HashMap<>();
+        for (String action : SupplyType.getActions()) {
+            careNeeded.put(action, new ArrayList<>());
+            careNotNeeded.put(action, new ArrayList<>());
+        }
+        resultMap.put("isCareNeeded", careNeeded);
+        resultMap.put("isCareNotNeeded", careNotNeeded);
+
         AtomicInteger totalCount = new AtomicInteger(0);
         Set<String> processedSupplyIds = new HashSet<>();
 
@@ -158,14 +168,6 @@ public class SupplyService {
                             .sorted(Comparator.comparing(pair -> (String) pair.getSecond().get("supplyId")))
                             .collect(Collectors.toList());
 
-                    Map<String, ArrayList<Object>> careNeeded = new HashMap<>();
-                    Map<String, ArrayList<Object>> careNotNeeded = new HashMap<>();
-                    for (String action : SupplyType.getActions()) {
-                        careNeeded.put(action, new ArrayList<>());
-                        careNotNeeded.put(action, new ArrayList<>());
-                    }
-                    resultMap.put("isCareNeeded", careNeeded);
-                    resultMap.put("isCareNotNeeded", careNotNeeded);
                     resultMap.put("totalCount", totalCount.intValue());
 
                     for (Pair<Boolean, Map<String, Object>>  pair : sortedList) {
