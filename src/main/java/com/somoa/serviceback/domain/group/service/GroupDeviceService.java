@@ -31,7 +31,7 @@ public class GroupDeviceService extends GroupBaseService {
                 .flatMap(userExists -> {
                     if (userExists) {
                         return deviceRepository.findAllByGroupId(groupId)
-                                .flatMap(device -> deviceService.findById(device.getId()))
+                                .concatMap(device -> deviceService.findById(device.getId()))
                                 .collectList();
                     } else {
                         return Mono.error(new GroupException(GroupErrorCode.INVALID_GROUP_OR_USER));

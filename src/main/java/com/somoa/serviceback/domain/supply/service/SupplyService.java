@@ -11,6 +11,7 @@ import com.somoa.serviceback.domain.supply.repository.SupplyRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
@@ -20,6 +21,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -32,7 +34,7 @@ public class SupplyService {
     private final GroupUserRepository groupUserRepository;
 
     public Flux<Object> searchGroupSupply(Integer groupId, Boolean careRequired) {
-        return deviceSupplyRepository.findDistinctSupplyIdsByGroupId(groupId).flatMap(supplyId -> supplyRepository.findById(supplyId)).filter(supply -> {
+        return deviceSupplyRepository.findDistinctSupplyIdsByGroupId(groupId).flatMap(supplyRepository::findById).filter(supply -> {
             boolean conditionMet = isCareNeeded(supply);
             return careRequired == conditionMet;
         }).map(supply -> {
@@ -43,7 +45,6 @@ public class SupplyService {
             supplyData.put("supplyDetails", supply.getDetails());
             supplyData.put("supplyLimit", supply.getSupplyLimit());
 
-            // supplyAmountTmp가 null이 아닐 때만 값을 포함
             if (supply.getSupplyAmountTmp() != null) {
                 supplyData.put("supplyAmountTmp", supply.getSupplyAmountTmp());
             }
@@ -53,24 +54,10 @@ public class SupplyService {
 
     public Mono<Object> searchAllGroupSupply(Integer userId,Integer groupId) {
         Map<String, Object> resultMap = new HashMap<>();
-        Map<String, Object> supplyDataMap = new HashMap<>();
-        Map<String, ArrayList<Object>> careNeeded = new HashMap<>();
-        Map<String, ArrayList<Object>> careNotNeeded = new HashMap<>();
-        for (String action : SupplyType.getActions()) {
-            careNeeded.put(action, new ArrayList<>());
-            careNotNeeded.put(action, new ArrayList<>());
-        }
-
-        supplyDataMap.put("isCareNeeded", careNeeded);
-        supplyDataMap.put("isCareNotNeeded", careNotNeeded);
-
-        resultMap.put("totalCount", 0); // 초기 totalCount 값 설정
-        resultMap.put("isCareNeeded", careNeeded);
-        resultMap.put("isCareNotNeeded", careNotNeeded);
-
+        resultMap.put("totalCount", 0);
         AtomicInteger totalCount = new AtomicInteger(0);
 
-        Set<String> processedSupplyIds = new HashSet<>(); // 중복된 supplyId를 추적하기 위한 Set
+        Set<String> processedSupplyIds = new HashSet<>();
         return groupUserRepository.findGroupIdsByUserId(userId).collectList().flatMap(userGroupIds -> {
             if (!userGroupIds.contains(groupId)) {
                 return Mono.error(new RuntimeException("속한 그룹이 아닙니다!"));
@@ -96,50 +83,45 @@ public class SupplyService {
                         if (supply.getSupplyAmountTmp() != null) {
                             supplyData.put("supplyAmountTmp", supply.getSupplyAmountTmp());
                         }
-                        // 관리 필요 여부 판단
                         boolean careNeededcheck = isCareNeeded(supply);
-
-                        String action = SupplyType.getActionForType(supply.getType());
-                        if (!careNeededcheck) {
-                            ((Map<String, ArrayList<Object>>) supplyDataMap.get("isCareNeeded")).get(action).add(supplyData);
-                        } else {
-                            ((Map<String, ArrayList<Object>>) supplyDataMap.get("isCareNotNeeded")).get(action).add(supplyData);
-                        }
                         totalCount.incrementAndGet();
-                        return supplyData;
+                        return  Pair.of(careNeededcheck, supplyData);
                     });
                 }).collectList().flatMap(list -> {
+                    List<Pair<Boolean, Map<String, Object>>> sortedList = list.stream()
+                            .sorted(Comparator.comparing(pair -> (String) pair.getSecond().get("supplyId")))
+                            .collect(Collectors.toList());
+
+                    Map<String, ArrayList<Object>> careNeeded = new HashMap<>();
+                    Map<String, ArrayList<Object>> careNotNeeded = new HashMap<>();
+                    for (String action : SupplyType.getActions()) {
+                        careNeeded.put(action, new ArrayList<>());
+                        careNotNeeded.put(action, new ArrayList<>());
+                    }
+                    resultMap.put("isCareNeeded", careNeeded);
+                    resultMap.put("isCareNotNeeded", careNotNeeded);
                     resultMap.put("totalCount", totalCount.intValue());
-                    resultMap.put("isCareNeeded", supplyDataMap.get("isCareNeeded"));
-                    resultMap.put("isCareNotNeeded", supplyDataMap.get("isCareNotNeeded"));
-
-
+                    for (Pair<Boolean, Map<String, Object>> pair : sortedList) {
+                        boolean careNeededcheck = pair.getFirst();
+                        Map<String, Object> supplyData = pair.getSecond();
+                        String action = SupplyType.getActionForType((String) supplyData.get("supplyType"));
+                        if (careNeededcheck) {
+                            ((Map<String, ArrayList<Object>>) resultMap.get("isCareNeeded")).get(action).add(supplyData);
+                        } else {
+                            ((Map<String, ArrayList<Object>>) resultMap.get("isCareNotNeeded")).get(action).add(supplyData);
+                        }
+                    }
                     return Mono.just(resultMap);
-                }); // 최종 결과 반환
+                });
             });
         });
     }
 
     public Mono<Object> searchAllSupply(Integer userId) {
         Map<String, Object> resultMap = new HashMap<>();
-        Map<String, Object> supplyDataMap = new HashMap<>();
-        Map<String, ArrayList<Object>> careNeeded = new HashMap<>();
-        Map<String, ArrayList<Object>> careNotNeeded = new HashMap<>();
-        for (String action : SupplyType.getActions()) {
-            careNeeded.put(action, new ArrayList<>());
-            careNotNeeded.put(action, new ArrayList<>());
-        }
-
-        supplyDataMap.put("isCareNeeded", careNeeded);
-        supplyDataMap.put("isCareNotNeeded", careNotNeeded);
-
-
-        resultMap.put("totalCount", 0); // 초기 totalCount 값 설정
-        resultMap.put("isCareNeeded", careNeeded);
-        resultMap.put("isCareNotNeeded", careNotNeeded);
-
+        resultMap.put("totalCount", 0);
         AtomicInteger totalCount = new AtomicInteger(0);
-        Set<String> processedSupplyIds = new HashSet<>(); // 중복된 supplyId를 추적하기 위한 Set
+        Set<String> processedSupplyIds = new HashSet<>();
 
         return groupUserRepository.findGroupIdsByUserId(userId).collectList().
                 flatMap(groupIds -> {
@@ -148,7 +130,7 @@ public class SupplyService {
                     .collectList().flatMap(deviceIds -> {
                         if(deviceIds.isEmpty()){return Mono.just(resultMap);}
                 return deviceSupplyRepository.findDistinctSuppliesByDeviceIds(deviceIds).flatMap(supplyWithGroupInfo -> {
-                    if (!processedSupplyIds.add(supplyWithGroupInfo.getSupplyId())) { // 중복 supplyId 제거
+                    if (!processedSupplyIds.add(supplyWithGroupInfo.getSupplyId())) {
                         return Mono.empty();
                     }
                     return supplyRepository.findById(supplyWithGroupInfo.getSupplyId()).map(supply -> {
@@ -167,24 +149,35 @@ public class SupplyService {
                             supplyData.put("supplyAmountTmp", supply.getSupplyAmountTmp());
                         }
                         boolean careNeededcheck = isCareNeeded(supply);
-                        String action = SupplyType.getActionForType(supply.getType());
-                        if (!careNeededcheck) {
-                            ((Map<String, ArrayList<Object>>) supplyDataMap.get("isCareNeeded")).get(action).add(supplyData);
-                        } else {
-                            ((Map<String, ArrayList<Object>>) supplyDataMap.get("isCareNotNeeded")).get(action).add(supplyData);
-                        }
                         totalCount.incrementAndGet();
-                        System.out.println(supplyData);
-                        System.out.println(supplyDataMap);
-                        return supplyData;
+                        return  Pair.of(careNeededcheck, supplyData);
                     });
                 }).collectList()
                 .flatMap(list -> {
+                    List<Pair<Boolean, Map<String, Object>>> sortedList = list.stream()
+                            .sorted(Comparator.comparing(pair -> (String) pair.getSecond().get("supplyId")))
+                            .collect(Collectors.toList());
+
+                    Map<String, ArrayList<Object>> careNeeded = new HashMap<>();
+                    Map<String, ArrayList<Object>> careNotNeeded = new HashMap<>();
+                    for (String action : SupplyType.getActions()) {
+                        careNeeded.put(action, new ArrayList<>());
+                        careNotNeeded.put(action, new ArrayList<>());
+                    }
+                    resultMap.put("isCareNeeded", careNeeded);
+                    resultMap.put("isCareNotNeeded", careNotNeeded);
                     resultMap.put("totalCount", totalCount.intValue());
-                    resultMap.put("isCareNeeded", supplyDataMap.get("isCareNeeded"));
-                    resultMap.put("isCareNotNeeded", supplyDataMap.get("isCareNotNeeded"));
 
-
+                    for (Pair<Boolean, Map<String, Object>>  pair : sortedList) {
+                        boolean careNeededcheck = pair.getFirst();
+                        Map<String, Object> supplyData =pair.getSecond();
+                        String action = SupplyType.getActionForType((String) supplyData.get("supplyType"));
+                        if (careNeededcheck) {
+                            ((Map<String, ArrayList<Object>>) resultMap.get("isCareNeeded")).get(action).add(supplyData);
+                        } else {
+                            ((Map<String, ArrayList<Object>>) resultMap.get("isCareNotNeeded")).get(action).add(supplyData);
+                        }
+                    }
                     return Mono.just(resultMap);
                 });
             });
@@ -210,10 +203,7 @@ public class SupplyService {
         if (!newLimit.containsKey("supplyLimit")) {
             return Mono.error(new IllegalArgumentException("supplyLimit 키가 요청에 포함되어 있지 않습니다."));
         }
-
-        @SuppressWarnings("unchecked") // 타입 캐스팅 경고를 억제
         Map<String, Object> supplyLimit = (Map<String, Object>) newLimit.get("supplyLimit");
-
         return supplyRepository.findById(supplyId)
                 .switchIfEmpty(Mono.error(new RuntimeException("존재하지 않는 소모품 ID입니다.")))
                 .flatMap(supply -> {
@@ -242,43 +232,58 @@ public class SupplyService {
             String key = entry.getKey();
             Object limitValue = entry.getValue();
             Object detailValue = details.get(key);
-            if ("supplyChangeDate".equals(key)) { //교체필요
-                if (detailValue instanceof Date) {
-                    Instant detailDate = ((Date) detailValue).toInstant();
-                    Instant now = Instant.now();
-                    long daysBetween = Duration.between(detailDate, now).toDays();
-                    if ((int) limitValue > 0 && daysBetween >= (int) limitValue) {
-                        return true;
-                    }
-                } else if (detailValue instanceof Instant detailDate) {
-                    // detailValue가 이미 Instant 인스턴스인 경우, 직접 사용
-                    Instant now = Instant.now();
-                    long daysBetween = Duration.between(detailDate, now).toDays();
-                    if ((int) limitValue > 0 && daysBetween >= (int) limitValue) {
-                        return true;
-                    }
-                }
+
+            switch (key) {
+                case "supplyChangeDate":
+                    if (isDateExceedingLimit(detailValue, limitValue)) return true;
+                    break;
+                case "supplyStatus":
+                    if (isStatusBelowLimit(detailValue, limitValue)) return true;
+                    break;
+                case "supplyAmount":
+                case "supplyLevel":
+                    if (isValueOutsideLimit(supply, key, detailValue, limitValue)) return true;
+                    break;
             }
-            // 상태 비교
-            else if ("supplyStatus".equals(key)) { // 청소필요
-                int detailStatusValue = FilterStatus.statusToNumber(detailValue);
-                int limitStatusValue = FilterStatus.statusToNumber(limitValue);
-                if (detailStatusValue <= limitStatusValue && limitStatusValue > 0) {
-                    return true;
+        }
+        return false;
+    }
+
+    private static boolean isDateExceedingLimit(Object detailValue, Object limitValue) {
+        if (!(limitValue instanceof Integer)) return false;
+        int limitDays = (int) limitValue;
+        if (limitDays <= 0) return false;
+
+        Instant detailDate = detailValue instanceof Date ?
+                ((Date) detailValue).toInstant() :
+                detailValue instanceof Instant ? (Instant) detailValue : null;
+        if (detailDate == null) return false;
+
+        long daysBetween = Duration.between(detailDate, Instant.now()).toDays();
+        return daysBetween >= limitDays;
+    }
+
+    private static boolean isStatusBelowLimit(Object detailValue, Object limitValue) {
+        int detailStatusValue = FilterStatus.statusToNumber(detailValue);
+        int limitStatusValue = FilterStatus.statusToNumber(limitValue);
+        return detailStatusValue <= limitStatusValue && limitStatusValue > 0;
+    }
+
+    private static boolean isValueOutsideLimit(Supply supply, String key, Object detailValue, Object limitValue) {
+        if (!(detailValue instanceof Integer) || !(limitValue instanceof Integer)) return false;
+        int detailIntValue = (int) detailValue;
+        int limitIntValue = (int) limitValue;
+
+        switch (key) {
+            case "supplyAmount":
+                return detailIntValue <= limitIntValue && limitIntValue != 0;
+            case "supplyLevel":
+                if (supply.getType().equals("drainTank")) {
+                    return detailIntValue >= limitIntValue && limitIntValue != 100;
+                } else if (supply.getType().equals("supplyTank")) {
+                    return detailIntValue <= limitIntValue && limitIntValue != 0;
                 }
-            }
-            // 수량 비교
-            else if ("supplyAmount".equals(key) && detailValue instanceof Integer && limitValue instanceof Integer) { // 충전
-                if ((int) detailValue <= (int) limitValue && (int) limitValue != 0) {
-                    return true;
-                }
-            } else if ("supplyLevel".equals(key) && detailValue instanceof Integer && limitValue instanceof Integer) { //
-                if (supply.getType().equals("drainTank") && (int) detailValue >= (int) limitValue && (int) limitValue != 100) {
-                    return true; // 청소
-                } else if (supply.getType().equals("supplyTank") && (int) detailValue <= (int) limitValue && (int) limitValue != 0) {
-                    return true; //충전
-                }
-            }
+                break;
         }
         return false;
     }
