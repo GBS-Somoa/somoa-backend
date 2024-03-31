@@ -269,14 +269,6 @@ public class DeviceService {
                 );
     }
 
-    /**
-     *
-     * Todo: 그룹에서 관리되는넘 -> Type만 비교, 나머지는 name과 Type 비교
-     * @param supplyId
-     * @param supplyStatusParams
-     * @param group
-     * @return
-     */
     @Transactional
     private Mono<Void> updateSupplyDetails(String supplyId, List<SupplyStatusParam> supplyStatusParams, Group group) {
         return supplyRepository.findById(supplyId)
