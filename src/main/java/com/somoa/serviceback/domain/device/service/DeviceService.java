@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.somoa.serviceback.domain.group.entity.Group;
-import com.somoa.serviceback.domain.group.repository.GroupRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -109,10 +108,10 @@ public class DeviceService {
                     supplyLimit.put("supplyAmount", SupplyType.getDefaultLimit(param.getType())); // 기본값 0 -> 알람안뜨게설정
                     break;
                 case "supplyStatus":
-                    if (param.getDetails().contains("supplyChangeDate")) { // 필터류 상태
-                        details.put("supplyStatus",  "good"); // 기본값 "good"
-                        supplyLimit.put("supplyStatus", "bad"); // 기본값 "null" -> 알람안뜨게설정
-                    } else { // 단일 소모품 상태(봉투 등)
+                    if (param.getType().contains("Filter")) {
+                        details.put("supplyStatus",  "good");
+                        supplyLimit.put("supplyStatus", "bad");
+                    } else {
                         details.put("supplyStatus",  SupplyType.getDefaultDetail(param.getType()));
                         supplyLimit.put("supplyStatus", SupplyType.getDefaultLimit(param.getType()));
                     }
@@ -269,24 +268,16 @@ public class DeviceService {
                 );
     }
 
-    /**
-     *
-     * Todo: 그룹에서 관리되는넘 -> Type만 비교, 나머지는 name과 Type 비교
-     * @param supplyId
-     * @param supplyStatusParams
-     * @param group
-     * @return
-     */
     @Transactional
     private Mono<Void> updateSupplyDetails(String supplyId, List<SupplyStatusParam> supplyStatusParams, Group group) {
         return supplyRepository.findById(supplyId)
                 .flatMap(supply -> Flux.fromIterable(supplyStatusParams)
                         .filter(param -> (SupplyType.isLiquidType(supply.getType())&&supply.getType().equals(param.getType()))||(supply.getName().equals(param.getName()) && supply.getType().equals(param.getType())))
-                        .next() // 첫 번째 일치하는 요소를 가져옴
-                        .flatMap(param -> updateSupply(supply, param)) // 비동기적으로 updateSupply 실행
-                        .flatMap(supplyRepository::save) // 업데이트된 Supply 저장
+                        .next()
+                        .flatMap(param -> updateSupply(supply, param))
+                        .flatMap(supplyRepository::save)
                         .flatMap(updatedSupply -> checkLimitsAndNotify(updatedSupply, group)) // 알림 확인 및 전송
-                        .then() // 모든 작업 완료 시 Mono<Void> 반환
+                        .then()
                 );
     }
 
@@ -322,10 +313,21 @@ public class DeviceService {
                 } else if ("supplyLevel".equals(detailKey)) {
                     if (newValue != null && !newValue.isEmpty()) {
                         int intValue = Integer.parseInt(newValue);
-                        // 변환된 intValue를 맵에 저장
                         supply.getDetails().put(detailKey, intValue);
                     }
-                } else {
+                }else if("supplyStatus".equals(detailKey)){
+                    if (newValue != null && !newValue.isEmpty()) {
+                        if(param.getType().contains("Filter")) {
+                            supply.getDetails().put(detailKey, newValue);
+                        }else {
+                            try {
+                                supply.getDetails().put(detailKey, Integer.parseInt(newValue));
+                            } catch (NumberFormatException e) {
+                                throw new IllegalArgumentException("유효하지 않은 supplyStatus: " + newValue, e);
+                            }
+                        }
+                        }
+                }else {
                     if (newValue != null && !newValue.isEmpty()) {
                         supply.getDetails().put(detailKey, newValue);
                     }
@@ -336,11 +338,9 @@ public class DeviceService {
     }
 
     private Mono<Void> checkLimitsAndNotify(Supply supply, Group group) {
-        // isCareNeeded 메서드를 사용하여 care가 필요한지 확인
         boolean shouldNotify = isCareNeeded(supply);
         if (shouldNotify) {
             log.info("알림 전송");
-            // findFirstDeviceIdBySupplyId 메서드의 정의가 필요하며, 이 메서드는 해당 supplyId를 가진 첫 번째 deviceId를 Mono로 반환해야 합니다.
             return deviceSupplyRepository.findFirstDeviceIdBySupplyId(supply.getId())
                     .flatMap(deviceId -> fcmService.sendMessageToGroup(
                             group.getId(),
@@ -349,7 +349,7 @@ public class DeviceService {
                             , SupplyType.getActionForType(supply.getType()),
                             "DeviceDetailScreen",
                             deviceId)
-                    ).then(); // 작업이 완료되면 Mono<Void>를 반환합니다.
+                    ).then();
         } else {
             return Mono.empty();
         }
