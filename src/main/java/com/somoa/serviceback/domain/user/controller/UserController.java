@@ -117,7 +117,7 @@ public class UserController {
     public Mono<ResponseEntity<String>> sendNotificationsToAllUsers() {
         return fcmRepository.findAll()
                 .flatMap(fcmToken -> {
-                    FcmSendDto fcmSendDto = new FcmSendDto(fcmToken.getToken(), "제목", "본문","아이콘","경로","데이터",1);
+                    FcmSendDto fcmSendDto = new FcmSendDto(fcmToken.getToken(), "제목", "본문","아이콘","경로","데이터","1");
                     return fcmService.sendMessageTo(fcmSendDto);
                 })
                 .collectList()

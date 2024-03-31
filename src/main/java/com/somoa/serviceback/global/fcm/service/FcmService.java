@@ -95,7 +95,7 @@ public class FcmService {
     public Mono<Integer> sendMessageToGroup(int groupId, String title, String body, String icon, String path, String pathData) {
         return findFcmTokensByGroupId(groupId)
                 .flatMap(fcmToken -> {
-                    FcmSendDto fcmsendDto = new FcmSendDto(fcmToken.getToken(), title, body, icon, path, pathData, groupId);
+                    FcmSendDto fcmsendDto = new FcmSendDto(fcmToken.getToken(), title, body, icon, path, pathData, Integer.toString(groupId));
                     return sendMessageTo(fcmsendDto);
                 })
                 .collectList()
