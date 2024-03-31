@@ -38,7 +38,7 @@ public class SupplyType {
         put(CLEANABLE_FILTER, FilterStatus.GOOD);
         put(SUPPLY_TANK, 0);
         put(DRAIN_TANK, 0);
-        put(DUST_BIN, 10);
+        put(DUST_BIN, 0);
         put(WASHER_DETERGENT, 0);
         put(DISH_DETERGENT, 0);
         put(FABRIC_SOFTENER, 0);

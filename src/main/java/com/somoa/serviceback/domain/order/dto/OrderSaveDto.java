@@ -1,12 +1,14 @@
 package com.somoa.serviceback.domain.order.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Data
 public class OrderSaveDto {
 
     private Integer groupId;
-    private Integer userId;
+    @JsonProperty("userId")
+    private String userName;
     private String supplyId;
     private String orderStatus;
     private String orderStore;
