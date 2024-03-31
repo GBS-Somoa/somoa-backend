@@ -21,4 +21,6 @@ public class FcmSendDto {
 
     private String pathData;
 
+    private Integer groupId;
+
 }
