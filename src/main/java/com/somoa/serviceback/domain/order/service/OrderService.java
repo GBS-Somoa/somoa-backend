@@ -22,6 +22,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -69,15 +70,14 @@ public class OrderService {
                                 .orderStoreId(orderSaveDto.getOrderStoreId())
                                 .productImg(orderSaveDto.getProductImg())
                                 .orderCount(orderSaveDto.getOrderCount())
-                                // 제품 리포지토리에서 조회한 amount를 주문에 설정
-                                .orderAmount(product.getAmount())
+                                .orderAmount(Optional.ofNullable(product.getAmount()).orElse(null))
                                 .build()))
                 .flatMap(order -> {
                     return supplyRepository.findById(order.getSupplyId())
                             .switchIfEmpty(Mono.error(new IllegalArgumentException("소모품을 찾을 수 없습니다.")))
                             .flatMap(supply -> {
-                                int orderAmountInMilliliters = parseOrderAmount(order.getOrderAmount());
                                 if(supply.getDetails().containsKey("supplyAmount")) {
+                                    int orderAmountInMilliliters = parseOrderAmount(order.getOrderAmount());
                                     supply.setSupplyAmountTmp(supply.getSupplyAmountTmp() + (order.getOrderCount() * orderAmountInMilliliters));
                                 }
                                 return supplyRepository.save(supply);
