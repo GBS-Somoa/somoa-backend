@@ -74,7 +74,7 @@ pipeline {
          steps {
             dir ('.'){
             sh """
-            image=\$(docker images --filter=reference=${env.DOCKER_IMAGE_NAME} -q)
+            image=\$(docker images --filter=reference=${env.DOCKER_IMAGE_NAME}:latest -q)
             if [ -n "\$image" ]; then
                docker image tag ${env.DOCKER_IMAGE_NAME}:latest ${env.DOCKER_IMAGE_NAME}:old
                docker rmi ${env.DOCKER_IMAGE_NAME}:latest
