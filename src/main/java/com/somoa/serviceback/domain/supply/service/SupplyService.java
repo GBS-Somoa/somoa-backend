@@ -271,7 +271,7 @@ public class SupplyService {
     private static boolean isStatusBelowLimit(Object detailValue, Object limitValue) {
         int detailStatusValue = FilterStatus.statusToNumber(detailValue);
         int limitStatusValue = FilterStatus.statusToNumber(limitValue);
-        return detailStatusValue <= limitStatusValue && limitStatusValue > 0;
+        return detailStatusValue >= limitStatusValue && limitStatusValue > 0;
     }
 
     private static boolean isValueOutsideLimit(Supply supply, String key, Object detailValue, Object limitValue) {

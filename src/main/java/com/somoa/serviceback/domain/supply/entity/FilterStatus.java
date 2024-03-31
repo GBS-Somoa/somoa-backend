@@ -11,9 +11,9 @@ public class FilterStatus {
     public static int statusToNumber(Object statusValue) {
         if (statusValue instanceof String) {
             switch ((String) statusValue) {
-                case "good": return 3;
+                case "good": return 1;
                 case "normal": return 2;
-                case "bad": return 1;
+                case "bad": return 3;
                 default: return 0; // 알 수 없는 상태
             }
         } else if (statusValue instanceof Integer) {
