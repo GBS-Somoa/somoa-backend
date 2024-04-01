@@ -99,7 +99,7 @@ public class UserService {
                                     orderResponse.setGroupName(groupName);
                                     return orderResponse;
                                 }))
-                        .defaultIfEmpty(orderResponse)) // Device 정보가 없는 경우, 기존 OrderWithGroupnameResponse 객체 반환
-                .collectList(); // 모든 OrderWithGroupnameResponse 객체를 리스트로 수집
+                        .defaultIfEmpty(orderResponse))
+                .collectList();
     }
 }

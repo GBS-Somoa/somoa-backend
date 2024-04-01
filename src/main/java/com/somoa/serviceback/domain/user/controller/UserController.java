@@ -63,17 +63,14 @@ public class UserController {
                     String nickname = response.get("nickname").toString();
                     Map<String, String> data = (Map<String, String>) response.get("tokens");
                     data.put("nickname", nickname);
-                    // FCM 토큰 저장 로직 호출
                     return fcmService.saveOrUpdateFcmToken(Integer.parseInt(userId), user.getMobileDeviceId(), user.getFcmToken())
                             .then(ResponseHandler.ok(data, "로그인 성공")); // 변경된 부분
                 })
                 .onErrorResume(e -> {
                     if (e instanceof UsernameNotFoundException || e instanceof BadCredentialsException) {
-                        // 인증 실패(사용자 이름 또는 비밀번호 오류)의 경우
                         return ResponseHandler.error("유효하지 않은 사용자 이름 또는 비밀번호", HttpStatus.UNAUTHORIZED);
                     } else {
                         log.warn("login error: ", e);
-                        // 그 외 실패(예: 토큰 생성 실패)의 경우
                         return ResponseHandler.error("서버 오류로 인해 로그인을 처리할 수 없습니다.", HttpStatus.INTERNAL_SERVER_ERROR);
                     }
                 });
@@ -116,20 +113,15 @@ public class UserController {
                         .flatMap(responseData -> ResponseHandler.ok(responseData, "주문조회가 완료되었습니다.."));
     }
 
-    /**
-     * 모든 사용자에게 알림을 보내는 엔드포인트(참고코드용)
-     * @return
-     */
     @GetMapping("/sendNotifications")
     public Mono<ResponseEntity<String>> sendNotificationsToAllUsers() {
         return fcmRepository.findAll()
                 .flatMap(fcmToken -> {
-                    FcmSendDto fcmSendDto = new FcmSendDto(fcmToken.getToken(), "제목", "본문","아이콘","경로","데이터");
+                    FcmSendDto fcmSendDto = new FcmSendDto(fcmToken.getToken(), "제목", "본문","아이콘","경로","데이터","1");
                     return fcmService.sendMessageTo(fcmSendDto);
                 })
-                .collectList() // 모든 메시지 전송 작업 결과를 리스트로 수집
+                .collectList()
                 .flatMap(resultList -> {
-                    // 여기에서는 단순히 성공 메시지를 보내지만, 필요하다면 resultList를 검사하여 세부 처리를 할 수 있습니다.
                     long successCount = resultList.stream().filter(result -> result == 1).count();
                     if (successCount > 0) {
                         return Mono.just(ResponseEntity.ok().body(successCount + " messages sent successfully"));
@@ -138,6 +130,4 @@ public class UserController {
                     }
                 });
     }
-
-
 }

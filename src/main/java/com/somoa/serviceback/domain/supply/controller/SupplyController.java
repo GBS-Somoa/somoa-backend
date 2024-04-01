@@ -1,6 +1,7 @@
 package com.somoa.serviceback.domain.supply.controller;
 
 import com.somoa.serviceback.domain.device.exception.DeviceNotFoundException;
+import com.somoa.serviceback.domain.product.dto.BarcodeRequest;
 import com.somoa.serviceback.domain.supply.dto.SupplyAmountParam;
 import com.somoa.serviceback.domain.supply.service.SupplyService;
 import com.somoa.serviceback.global.annotation.Login;
@@ -34,6 +35,12 @@ public class SupplyController {
                 });
     }
 
+    @GetMapping("/barcode")
+    public Mono<ResponseEntity<ResponseHandler>> barcodeToProduct(@Login Integer loginUserId, @RequestBody BarcodeRequest barcodeRequest) {
+        return supplyService.barcodeToProduct(loginUserId,barcodeRequest)
+                .flatMap(resultMap -> ResponseHandler.ok(resultMap, "모든 소모품 목록 조회에 성공했습니다."))
+                .onErrorResume(this::handleError);
+    }
 
     @GetMapping("/groupsupply")
     public Mono<ResponseEntity<ResponseHandler>> allSupplybyGroupSearch(@Login Integer loginUserId, @RequestParam Integer groupId) {

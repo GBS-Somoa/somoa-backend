@@ -3,6 +3,9 @@ package com.somoa.serviceback.domain.supply.service;
 
 import com.somoa.serviceback.domain.device.repository.DeviceRepository;
 import com.somoa.serviceback.domain.group.repository.GroupUserRepository;
+import com.somoa.serviceback.domain.product.dto.BarcodeRequest;
+import com.somoa.serviceback.domain.product.entity.Product;
+import com.somoa.serviceback.domain.product.repository.ProductRepository;
 import com.somoa.serviceback.domain.supply.entity.FilterStatus;
 import com.somoa.serviceback.domain.supply.entity.Supply;
 import com.somoa.serviceback.domain.supply.entity.SupplyType;
@@ -32,6 +35,7 @@ public class SupplyService {
     private final DeviceSupplyRepository deviceSupplyRepository;
     private final SupplyRepository supplyRepository;
     private final GroupUserRepository groupUserRepository;
+    private final ProductRepository productRepository;
 
     public Flux<Object> searchGroupSupply(Integer groupId, Boolean careRequired) {
         return deviceSupplyRepository.findDistinctSupplyIdsByGroupId(groupId).flatMap(supplyRepository::findById).filter(supply -> {
@@ -271,7 +275,7 @@ public class SupplyService {
     private static boolean isStatusBelowLimit(Object detailValue, Object limitValue) {
         int detailStatusValue = FilterStatus.statusToNumber(detailValue);
         int limitStatusValue = FilterStatus.statusToNumber(limitValue);
-        return detailStatusValue <= limitStatusValue && limitStatusValue > 0;
+        return detailStatusValue >= limitStatusValue && limitStatusValue > 0;
     }
 
     private static boolean isValueOutsideLimit(Supply supply, String key, Object detailValue, Object limitValue) {
@@ -291,5 +295,10 @@ public class SupplyService {
                 break;
         }
         return false;
+    }
+
+    public Mono<Product> barcodeToProduct(Integer loginUserId, BarcodeRequest barcodeRequest) {
+        return productRepository.findByBarcode(barcodeRequest.getBarcode())
+                .switchIfEmpty(Mono.error(new RuntimeException("해당 바코드에 대한 제품이 존재하지 않습니다.")));
     }
 }

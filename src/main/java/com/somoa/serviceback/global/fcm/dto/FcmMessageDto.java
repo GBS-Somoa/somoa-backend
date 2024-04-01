@@ -27,6 +27,7 @@ public class FcmMessageDto {
         private String icon;
         private String path;
         private String pathData;
+        private String groupId;
     }
 
     @Builder
