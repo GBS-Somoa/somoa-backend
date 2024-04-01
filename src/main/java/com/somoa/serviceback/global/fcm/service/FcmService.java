@@ -27,19 +27,24 @@ public class FcmService {
     private final GroupUserRepository groupUserRepository;
     private final WebClient webClient = WebClient.builder().build();
     public Mono<FcmToken> saveOrUpdateFcmToken(int userId, String mobileDeviceId, String fcmToken) {
-        return fcmRepository.findByUserIdAndMobileDeviceId(userId, mobileDeviceId)
-                .flatMap(existingToken -> {
-                    existingToken.setToken(fcmToken);
-                    return fcmRepository.save(existingToken);
+        return fcmRepository.findByToken(fcmToken)
+                .flatMap(existingUserWithToken -> {
+                    existingUserWithToken.setToken("1234");
+                    return fcmRepository.save(existingUserWithToken);
                 })
-                .switchIfEmpty(Mono.defer(() -> {
-                    FcmToken newToken = FcmToken.builder()
-                            .userId(userId)
-                            .mobileDeviceId(mobileDeviceId)
-                            .token(fcmToken)
-                            .build();
-                    return fcmRepository.save(newToken);
-                }));
+                .then(fcmRepository.findByUserIdAndMobileDeviceId(userId, mobileDeviceId)
+                        .flatMap(existingToken -> {
+                            existingToken.setToken(fcmToken);
+                            return fcmRepository.save(existingToken);
+                        })
+                        .switchIfEmpty(Mono.defer(() -> {
+                            FcmToken newToken = FcmToken.builder()
+                                    .userId(userId)
+                                    .mobileDeviceId(mobileDeviceId)
+                                    .token(fcmToken)
+                                    .build();
+                            return fcmRepository.save(newToken);
+                        })));
     }
 
     public Mono<Integer> sendMessageTo(FcmSendDto fcmSendDto) {
