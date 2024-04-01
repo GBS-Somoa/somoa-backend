@@ -58,4 +58,16 @@ public class OrderController {
                     return ResponseHandler.error("internal server error.", HttpStatus.INTERNAL_SERVER_ERROR);
                 });
     }
+
+    @GetMapping("/in-progress")
+    public Mono<ResponseEntity<ResponseHandler>> getOrdersInProgress(@RequestParam(value = "supply_id") String supplyId) {
+        return orderService.findOrdersInProgress(supplyId)
+                .flatMap(data -> ResponseHandler.ok(data, "주문 목록을 조회했습니다."))
+                .onErrorResume(error -> {
+                    if (error instanceof IllegalArgumentException) {
+                        return ResponseHandler.error(error.getMessage(), HttpStatus.BAD_REQUEST);
+                    }
+                    return ResponseHandler.error("internal server error.", HttpStatus.INTERNAL_SERVER_ERROR);
+                });
+    }
 }

@@ -174,4 +174,9 @@ public class OrderService {
                 .collectList();
     }
 
+    public Mono<List<OrderResponse>> findOrdersInProgress(String supplyId) {
+        return orderRepository.findOrdersInProgress(supplyId)
+                .map(OrderResponse::of)
+                .collectList();
+    }
 }

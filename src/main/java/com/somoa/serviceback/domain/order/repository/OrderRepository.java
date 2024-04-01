@@ -42,4 +42,11 @@ public interface OrderRepository extends ReactiveCrudRepository<Order, Integer> 
             "  ORDER BY created_at DESC" +
             "  LIMIT :count")
     Flux<Order> findOrders(String supplyId, String orderStatus, int count);
+
+    @Query("SELECT * " +
+            "   FROM `order` " +
+            "  WHERE supply_id = :supplyId AND" +
+            "        (order_status = '주문 완료' OR order_status = '배송 중')" +
+            "  ORDER BY created_at DESC")
+    Flux<Order> findOrdersInProgress(String supplyId);
 }
