@@ -10,4 +10,6 @@ public interface FcmRepository extends ReactiveMongoRepository<FcmToken, String>
     Mono<FcmToken> findByUserIdAndMobileDeviceId(int userId, String mobileDeviceId);
 
     Flux<FcmToken> findByUserId(int userId);
+
+    Mono<FcmToken> findByToken(String fcmToken);
 }
