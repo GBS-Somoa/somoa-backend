@@ -35,5 +35,16 @@ out/
 /nbdist/
 /.nb-gradle/
 
+# resources 폴더 내의 sql 파일을 Git 추적 대상으로 포함
+/src/main/resources/data.sql
+/src/main/resources/schema.sql
+
+# fcm key
+/src/main/resources/*.json
+
 ### VS Code ###
 .vscode/
+
+### sql ###
+data.sql
+schema.sql
